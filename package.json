@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
-    "build": "opennextjs-cloudflare build",
+    "build": "opennextjs-cloudflare build --openNextConfigPath cloudflare/open-next.config.ts",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
@@ -12,8 +12,8 @@
     "typecheck": "tsc --noEmit",
     "academy:d1-sql": "node scripts/export-d1-migrations.mjs",
     "academy:render-calculator": "node scripts/render-calculator-video.mjs",
-    "preview": "npm run build && opennextjs-cloudflare preview",
-    "deploy": "npm run build && opennextjs-cloudflare deploy",
+    "preview": "wrangler dev",
+    "deploy": "wrangler deploy",
     "build:next": "next build"
   },
   "dependencies": {

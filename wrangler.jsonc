@@ -10,7 +10,13 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
-  // Build: `npm run build` (OpenNext). Deploy: `npx wrangler deploy`, which hands off to `opennextjs-cloudflare deploy`.
+  // `wrangler deploy` (the default Workers Builds deploy command) runs this build first, so the
+  // deploy works whatever build command is set in the dashboard. The OpenNext config lives in
+  // cloudflare/ on purpose: with it in the project root, Wrangler would hand the deploy to
+  // `opennextjs-cloudflare deploy`, which skips this build step.
+  "build": {
+    "command": "npx opennextjs-cloudflare build --openNextConfigPath cloudflare/open-next.config.ts"
+  },
   "services": [
     { "binding": "WORKER_SELF_REFERENCE", "service": "pension" }
   ],

@@ -37,11 +37,11 @@ First run creates `.data/academy.sqlite` and imports the course **in review stat
 
 ### Deploying to Cloudflare Workers
 
-The app runs on Cloudflare Workers through the OpenNext adapter (`@opennextjs/cloudflare`); see `wrangler.jsonc` and `open-next.config.ts`.
+The app runs on Cloudflare Workers through the OpenNext adapter (`@opennextjs/cloudflare`); see `wrangler.jsonc` and `cloudflare/open-next.config.ts`. The OpenNext config is deliberately not in the project root: there, Wrangler would hand `wrangler deploy` over to `opennextjs-cloudflare deploy`, which skips the build step in `wrangler.jsonc`.
 
 - **Bindings:** `ACADEMY_DB` (D1 database `pension-academy`) and `ACADEMY_MEDIA` (R2 bucket `pension-academy-media`). Wrangler creates both on the first deploy if they do not exist. On Cloudflare the app picks these bindings automatically; schema migrations and the course import run on the first request.
-- **Workers Builds (Git integration):** the Worker in the dashboard must be named `pension` (same as `name` in `wrangler.jsonc`). Build command: `npm run build` (runs the OpenNext build, which calls `next build` itself). Deploy command: `npx wrangler deploy` (Wrangler detects OpenNext and hands off to `opennextjs-cloudflare deploy`, which needs the build output).
-- **Manual deploy:** `npm run deploy` (build + deploy). Local preview in the Workers runtime with local D1/R2: `npm run preview`. Plain Next.js build without the adapter: `npm run build:next`.
+- **Workers Builds (Git integration):** the Worker in the dashboard must be named `pension` (same as `name` in `wrangler.jsonc`). Deploy command: `npx wrangler deploy` (the default). It runs the OpenNext build itself through `build.command` in `wrangler.jsonc`, so the dashboard build command may be empty or `npm run build`.
+- **Manual deploy:** `npm run deploy`. Local preview in the Workers runtime with local D1/R2: `npm run preview`. OpenNext build only: `npm run build`. Plain Next.js build without the adapter: `npm run build:next`.
 - **Secrets:** set `ANTHROPIC_API_KEY` (and optionally `NOTEBOOKLM_*`, `ACADEMY_RENDER_TOKEN`) with `npx wrangler secret put <NAME>` or in the dashboard under Settings → Variables and Secrets.
 - **Limits:** video uploads go through the Worker on this setup, so a single file is limited by the plan's request body size (100 MB on Free and Pro). For larger files configure R2 S3 keys (`ACADEMY_STORAGE_DRIVER=r2`, `R2_*`) to upload directly to R2. Password hashing uses Web Crypto PBKDF2 at the Workers maximum of 100,000 iterations.
 
