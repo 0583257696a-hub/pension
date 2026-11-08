@@ -10,11 +10,7 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
-  // `wrangler deploy` runs the OpenNext build first, so the default
-  // Workers Builds deploy command (`npx wrangler deploy`) works as is.
-  "build": {
-    "command": "npx opennextjs-cloudflare build"
-  },
+  // Build: `npm run build` (OpenNext). Deploy: `npx wrangler deploy`, which hands off to `opennextjs-cloudflare deploy`.
   "services": [
     { "binding": "WORKER_SELF_REFERENCE", "service": "pension" }
   ],

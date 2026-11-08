@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
-    "build": "next build",
+    "build": "opennextjs-cloudflare build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
@@ -12,9 +12,9 @@
     "typecheck": "tsc --noEmit",
     "academy:d1-sql": "node scripts/export-d1-migrations.mjs",
     "academy:render-calculator": "node scripts/render-calculator-video.mjs",
-    "cf:build": "opennextjs-cloudflare build",
-    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
+    "preview": "npm run build && opennextjs-cloudflare preview",
+    "deploy": "npm run build && opennextjs-cloudflare deploy",
+    "build:next": "next build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.6.0",
