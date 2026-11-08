@@ -288,21 +288,21 @@ export class VideoStudioService {
        VALUES (?,?,?,?,?,?,?,?,'uploading',?,?,?)`,
       [id, input.targetType, input.targetId, version, input.fileName.slice(0, 200), storageKey, input.contentType, input.size, pkg?.id ?? null, pkg?.notebook_id ?? null, actor.id],
     );
-    const uploadUrl = await getStorage().presignedUpload(storageKey, input.contentType);
+    const uploadUrl = await (await getStorage()).presignedUpload(storageKey, input.contentType);
     return { assetId: id, version, uploadUrl, serverUpload: uploadUrl ? null : `/api/academy/admin/videos/${id}/file` };
   }
 
   async storeUploadedBytes(assetId: string, data: Uint8Array) {
     const asset = await this.getAsset(assetId);
     if (asset.status !== "uploading") throw new StudioError("הקובץ כבר הועלה לגרסה זו");
-    await getStorage().put(asset.storage_key, data, asset.content_type);
+    await (await getStorage()).put(asset.storage_key, data, asset.content_type);
   }
 
   /** Runs the automatic file checks and moves the version to review (or rejects it). */
   async completeUpload(actor: User, assetId: string): Promise<VideoFileChecks> {
     const asset = await this.getAsset(assetId);
     if (asset.status !== "uploading") throw new StudioError("הגרסה אינה ממתינה להעלאה");
-    const storage = getStorage();
+    const storage = await getStorage();
     const head = await storage.head(asset.storage_key, 64 * 1024);
     if (!head) throw new StudioError("הקובץ לא נמצא באחסון");
     const full = head.size <= 300 * 1024 * 1024 ? await storage.read(asset.storage_key) : null;

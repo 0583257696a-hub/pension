@@ -7,13 +7,15 @@ import { COURSE_ID } from "../content/course";
 import { freshDb, makeUser } from "./helpers";
 
 describe("passwords", () => {
-  it("hashes with a per-user salt and verifies", () => {
-    const a = hashPassword("Secret123");
-    const b = hashPassword("Secret123");
+  it("hashes with a per-user salt and verifies", async () => {
+    const a = await hashPassword("Secret123");
+    const b = await hashPassword("Secret123");
     expect(a).not.toBe(b);
-    expect(verifyPassword("Secret123", a)).toBe(true);
-    expect(verifyPassword("secret123", a)).toBe(false);
+    expect(await verifyPassword("Secret123", a)).toBe(true);
+    expect(await verifyPassword("secret123", a)).toBe(false);
     expect(a).not.toContain("Secret123");
+    // Iteration counts above the Workers PBKDF2 cap are refused.
+    expect(await verifyPassword("Secret123", a.replace("pbkdf2$100000$", "pbkdf2$900000$"))).toBe(false);
   });
 });
 

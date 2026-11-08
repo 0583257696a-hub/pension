@@ -35,9 +35,17 @@ First run creates `.data/academy.sqlite` and imports the course **in review stat
 | Storage | `src/academy/storage` | Local disk or Cloudflare R2 (SigV4 presigned URLs, no SDK); automatic video file checks. |
 | UI | `src/app/academy`, `src/components/academy` | Tailwind v4, RTL, responsive. Admin under `/academy/admin`. Deterministic calculator render at `/render/calculator/[questionId]`. |
 
-### Compatibility note (Cloudflare)
+### Deploying to Cloudflare Workers
 
-No hosting is configured yet. On any Node host (Netlify, Vercel, a VM) use D1 through its REST API (`ACADEMY_DB_DRIVER=d1-http`) and R2 through its S3 API. Running on Cloudflare Workers needs the OpenNext Cloudflare adapter and the `d1-binding` driver. No production deployment was performed.
+The app runs on Cloudflare Workers through the OpenNext adapter (`@opennextjs/cloudflare`); see `wrangler.jsonc` and `open-next.config.ts`.
+
+- **Bindings:** `ACADEMY_DB` (D1 database `pension-academy`) and `ACADEMY_MEDIA` (R2 bucket `pension-academy-media`). Wrangler creates both on the first deploy if they do not exist. On Cloudflare the app picks these bindings automatically; schema migrations and the course import run on the first request.
+- **Workers Builds (Git integration):** the Worker in the dashboard must be named `pension` (same as `name` in `wrangler.jsonc`). The default deploy command `npx wrangler deploy` works because `wrangler.jsonc` runs `npx opennextjs-cloudflare build` first.
+- **Manual deploy:** `npm run deploy` (build + deploy). Local preview in the Workers runtime with local D1/R2: `npx wrangler dev`.
+- **Secrets:** set `ANTHROPIC_API_KEY` (and optionally `NOTEBOOKLM_*`, `ACADEMY_RENDER_TOKEN`) with `npx wrangler secret put <NAME>` or in the dashboard under Settings → Variables and Secrets.
+- **Limits:** video uploads go through the Worker on this setup, so a single file is limited by the plan's request body size (100 MB on Free and Pro). For larger files configure R2 S3 keys (`ACADEMY_STORAGE_DRIVER=r2`, `R2_*`) to upload directly to R2. Password hashing uses Web Crypto PBKDF2 at the Workers maximum of 100,000 iterations.
+
+On other Node hosts (Netlify, Vercel, a VM) use D1 through its REST API (`ACADEMY_DB_DRIVER=d1-http`) and R2 through its S3 API.
 
 ## Calculator-first solutions
 

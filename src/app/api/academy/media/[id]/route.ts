@@ -1,5 +1,3 @@
-import { createReadStream, statSync } from "node:fs";
-import { Readable } from "node:stream";
 import { getCurrentUser } from "@/academy/auth/session";
 import { isStaff } from "@/academy/auth/service";
 import { getDb } from "@/academy/db";
@@ -37,34 +35,30 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       if (!decideLessonAccess(user, lesson, entitlement).allowed) return json({ error: "התוכן זמין למנויים" }, 403);
     }
 
-    const storage = getStorage();
+    const storage = await getStorage();
     const signed = await storage.presignedDownload(asset.storage_key, 900);
     if (signed) return Response.redirect(signed, 302);
 
-    const file = storage.localPath(asset.storage_key);
-    if (!file) return json({ error: "לא נמצא" }, 404);
-    let size: number;
-    try {
-      size = statSync(file).size;
-    } catch {
-      return json({ error: "הקובץ לא נמצא" }, 404);
-    }
-    const range = request.headers.get("range");
     const headers: Record<string, string> = {
       "content-type": asset.content_type || "video/mp4",
       "accept-ranges": "bytes",
       "cache-control": "private, no-store",
     };
-    if (range) {
-      const match = /bytes=(\d*)-(\d*)/.exec(range);
-      const start = match?.[1] ? Number(match[1]) : 0;
-      const end = match?.[2] ? Math.min(Number(match[2]), size - 1) : size - 1;
-      if (start >= size || start > end) return new Response(null, { status: 416, headers: { "content-range": `bytes */${size}` } });
-      const stream = Readable.toWeb(createReadStream(file, { start, end })) as ReadableStream;
-      return new Response(stream, { status: 206, headers: { ...headers, "content-range": `bytes ${start}-${end}/${size}`, "content-length": String(end - start + 1) } });
+    const rangeHeader = request.headers.get("range");
+    const match = rangeHeader ? /bytes=(\d*)-(\d*)/.exec(rangeHeader) : null;
+    const range = match ? { start: match[1] ? Number(match[1]) : 0, end: match[2] ? Number(match[2]) : undefined } : undefined;
+    const object = await storage.stream(asset.storage_key, range);
+    if (!object) return json({ error: "הקובץ לא נמצא" }, 404);
+    if (range && (object.start >= object.size || object.start > object.end)) {
+      return new Response(null, { status: 416, headers: { "content-range": `bytes */${object.size}` } });
     }
-    const stream = Readable.toWeb(createReadStream(file)) as ReadableStream;
-    return new Response(stream, { status: 200, headers: { ...headers, "content-length": String(size) } });
+    if (object.partial) {
+      return new Response(object.body, {
+        status: 206,
+        headers: { ...headers, "content-range": `bytes ${object.start}-${object.end}/${object.size}`, "content-length": String(object.end - object.start + 1) },
+      });
+    }
+    return new Response(object.body, { status: 200, headers: { ...headers, "content-length": String(object.size) } });
   } catch (error) {
     return errorResponse(error);
   }

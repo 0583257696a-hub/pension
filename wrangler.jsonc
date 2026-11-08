@@ -1,0 +1,29 @@
+{
+  // Cloudflare Worker for AI Pension Academy (Next.js via the OpenNext adapter).
+  // The worker name must match the Worker connected to this repository in the Cloudflare dashboard.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pension",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-06-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  // `wrangler deploy` runs the OpenNext build first, so the default
+  // Workers Builds deploy command (`npx wrangler deploy`) works as is.
+  "build": {
+    "command": "npx opennextjs-cloudflare build"
+  },
+  "services": [
+    { "binding": "WORKER_SELF_REFERENCE", "service": "pension" }
+  ],
+  // The database and bucket are created automatically on the first deploy if they do not exist.
+  "d1_databases": [
+    { "binding": "ACADEMY_DB", "database_name": "pension-academy" }
+  ],
+  "r2_buckets": [
+    { "binding": "ACADEMY_MEDIA", "bucket_name": "pension-academy-media" }
+  ],
+  "observability": { "enabled": true }
+}

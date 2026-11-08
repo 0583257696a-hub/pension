@@ -45,7 +45,7 @@ export class AuthService {
     const id = newId("usr");
     await this.db.run(
       "INSERT INTO users (id, email, password_hash, full_name, phone, role, status) VALUES (?,?,?,?,?,?,'active')",
-      [id, email, hashPassword(input.password), input.full_name.trim(), (input.phone ?? "").trim(), role],
+      [id, email, await hashPassword(input.password), input.full_name.trim(), (input.phone ?? "").trim(), role],
     );
     return this.createSession(id);
   }
@@ -55,7 +55,7 @@ export class AuthService {
       "SELECT id, password_hash, status FROM users WHERE email = ?",
       [normalizeEmail(email)],
     );
-    if (!row || !verifyPassword(password, row.password_hash)) {
+    if (!row || !(await verifyPassword(password, row.password_hash))) {
       throw new AuthError("אימייל או סיסמה שגויים", "invalid_credentials");
     }
     if (row.status === "blocked") throw new AuthError("החשבון חסום. פנה למנהל המערכת", "blocked");
@@ -120,7 +120,7 @@ export class AuthService {
   async changePassword(userId: string, newPassword: string): Promise<void> {
     const weakness = validatePasswordStrength(newPassword);
     if (weakness) throw new AuthError(weakness, "weak_password");
-    await this.db.run("UPDATE users SET password_hash = ? WHERE id = ?", [hashPassword(newPassword), userId]);
+    await this.db.run("UPDATE users SET password_hash = ? WHERE id = ?", [await hashPassword(newPassword), userId]);
   }
 }
 

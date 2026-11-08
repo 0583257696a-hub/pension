@@ -1,4 +1,5 @@
 import { getConfig } from "../config";
+import { cloudflareEnv } from "../platform";
 import { migrate } from "./migrate";
 import type { SqlDb } from "./types";
 
@@ -27,8 +28,11 @@ export function setTestDb(db: SqlDb | undefined): void {
 
 async function createDb(): Promise<SqlDb> {
   const config = getConfig();
+  const env = await cloudflareEnv();
+  // On Cloudflare the D1 binding wins unless a driver is set explicitly.
+  const driver = process.env.ACADEMY_DB_DRIVER ? config.db.driver : env?.ACADEMY_DB ? "d1-binding" : config.db.driver;
   let db: SqlDb;
-  switch (config.db.driver) {
+  switch (driver) {
     case "d1-http": {
       const { D1HttpDb } = await import("./d1-http");
       const { accountId, databaseId, apiToken } = config.db.d1;
@@ -40,12 +44,13 @@ async function createDb(): Promise<SqlDb> {
     }
     case "d1-binding": {
       const { D1BindingDb } = await import("./d1-binding");
-      const binding = (globalThis as unknown as { ACADEMY_DB?: unknown }).ACADEMY_DB;
-      if (!binding) throw new Error("D1 binding driver selected but no ACADEMY_DB binding is present");
+      const binding = env?.ACADEMY_DB;
+      if (!binding) throw new Error("D1 binding driver selected but no ACADEMY_DB binding is present (see wrangler.jsonc)");
       db = new D1BindingDb(binding as ConstructorParameters<typeof D1BindingDb>[0]);
       break;
     }
     default: {
+      if (env) throw new Error("No ACADEMY_DB D1 binding found. Add it in wrangler.jsonc (d1_databases).");
       const { NodeSqliteDb } = await import("./node-sqlite");
       db = new NodeSqliteDb(config.db.sqliteFile);
     }
