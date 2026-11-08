@@ -17,7 +17,7 @@ function VideoCell({ video }: { video: Awaited<ReturnType<VideoStudioService["li
       {video.latest && video.latest.status !== "published" && <Badge tone={VIDEO_STATUS[video.latest.status]?.[1] ?? "slate"}>v{video.latest.version}: {VIDEO_STATUS[video.latest.status]?.[0]}</Badge>}
       {video.package && <Badge tone="blue">חבילת הפקה</Badge>}
       {video.notebook && <Badge tone={video.notebook.status === "error" ? "red" : "violet"}>מחברת: {video.notebook.status}</Badge>}
-      {video.stats && <span className="text-xs text-slate-500">{video.stats.views} צפיות · {video.stats.viewers} צופים</span>}
+      {video.stats && <span className="text-xs text-muted">{video.stats.views} צפיות · {video.stats.viewers} צופים</span>}
     </div>
   );
 }
@@ -30,7 +30,7 @@ export default async function StudioList() {
     <div className="space-y-4">
       <Card>
         <h2 className="text-lg font-extrabold">Video Studio</h2>
-        <p className="mt-1 text-sm text-slate-600">
+        <p className="mt-1 text-sm text-muted">
           תהליך ההפקה: חבילת הפקה ← מחברת NotebookLM ({notebook.automatic ? "נוצרת אוטומטית דרך ה-API" : "מצב ידני"}) ← הפקת הסרטון ב-NotebookLM והורדתו ← העלאה ובדיקות קובץ ← אישור אקדמי ואימות רצף המחשבון ← פרסום. מקטעי המחשבון מופקים מהרצף המאומת ולא ב-NotebookLM.
         </p>
       </Card>
@@ -38,13 +38,13 @@ export default async function StudioList() {
         <Card key={lesson.id}>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="text-xs text-slate-500">{lesson.unitTitle}</div>
+              <div className="text-xs text-muted">{lesson.unitTitle}</div>
               <Link href={`/academy/admin/studio/lesson/${lesson.id}`} className="font-extrabold hover:text-brand-700">סרטון שיעור: {lesson.title}</Link>
             </div>
             <VideoCell video={lesson.video} />
           </div>
           {lesson.questions.length > 0 && (
-            <ul className="mt-3 divide-y divide-slate-100 border-t border-slate-100">
+            <ul className="mt-3 divide-y divide-line-soft border-t border-line-soft">
               {lesson.questions.map((q) => (
                 <li key={q.id} className="flex flex-col gap-2 py-2 text-sm sm:flex-row sm:items-center sm:justify-between">
                   <Link href={`/academy/admin/studio/question/${q.id}`} className="min-w-0 truncate hover:text-brand-700">פתרון: {q.stem}</Link>

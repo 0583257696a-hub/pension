@@ -5,7 +5,7 @@ import type { CalcSequence } from "@/academy/calculator/types";
 export function KeyCap({ id }: { id: string }) {
   const def = FC200V.keys[id];
   if (!def) {
-    return <span className="inline-flex rounded-md border border-dashed border-amber-400 bg-amber-50 px-2 py-1 text-xs font-bold text-amber-800">ניקוי נתונים לפי המדריך</span>;
+    return <span className="inline-flex rounded-md border border-dashed border-amber-400 bg-warn-soft px-2 py-1 text-xs font-bold text-warn-ink">ניקוי נתונים לפי המדריך</span>;
   }
   const presses = def.press ?? [id];
   return (
@@ -17,22 +17,22 @@ export function KeyCap({ id }: { id: string }) {
         return (
           <kbd
             key={i}
-            className={`ltr inline-flex min-w-8 items-center justify-center rounded-md border-b-2 px-2 py-1 text-xs font-bold shadow-sm ${
-              isShift ? "border-amber-700 bg-amber-500 text-white" : isMode ? "border-slate-900 bg-slate-700 text-white" : "border-slate-400 bg-white text-slate-900"
+            className={`ltr inline-flex min-w-8 items-center justify-center rounded-md border-b-2 px-2 py-1 text-xs font-bold ${
+              isShift ? "border-amber-700 bg-amber-500 text-white" : isMode ? "border-ink bg-body text-white" : "border-faint bg-white text-ink"
             }`}
           >
             {k?.label ?? p}
           </kbd>
         );
       })}
-      {def.press && <span className="text-[11px] font-semibold text-slate-500">({def.label})</span>}
+      {def.press && <span className="text-[11px] font-semibold text-muted">({def.label})</span>}
     </span>
   );
 }
 
 export function CalcDisplay({ text, small = false }: { text: string; small?: boolean }) {
   return (
-    <div className={`ltr calc-display inline-block rounded-md border border-slate-500 bg-calc-screen text-slate-900 shadow-inner ${small ? "px-2 py-0.5 text-sm" : "px-3 py-1.5 text-base"}`}>
+    <div className={`ltr calc-display inline-block rounded-md border border-muted bg-calc-screen text-ink shadow-inner ${small ? "px-2 py-0.5 text-sm" : "px-3 py-1.5 text-base"}`}>
       {text}
     </div>
   );
@@ -42,34 +42,34 @@ export function CalcDisplay({ text, small = false }: { text: string; small?: boo
 export default function CalculatorSteps({ sequence, interpretation, modelName }: { sequence: CalcSequence; interpretation: string; modelName: string }) {
   return (
     <div className="space-y-4">
-      <div className="rounded-xl bg-slate-50 p-3 text-sm">
+      <div className="rounded-xl bg-surface p-3 text-sm">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-bold text-slate-900">{modelName}</span>
-          <span className="text-slate-500">·</span>
+          <span className="font-bold text-ink">{modelName}</span>
+          <span className="text-muted">·</span>
           <span>מצב:</span>
           <KeyCap id={sequence.mode} />
         </div>
-        <p className="mt-2 text-slate-700">{sequence.modeExplanation}</p>
-        <p className="mt-1 text-xs text-slate-500">{sequence.reset.required ? "⚠ " : ""}{sequence.reset.note}</p>
+        <p className="mt-2 text-body">{sequence.modeExplanation}</p>
+        <p className="mt-1 text-xs text-muted">{sequence.reset.required ? "⚠ " : ""}{sequence.reset.note}</p>
       </div>
 
       <div>
-        <h4 className="mb-2 font-bold text-slate-900">נתונים להזנה</h4>
+        <h4 className="mb-2 font-bold text-ink">נתונים להזנה</h4>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {sequence.inputs.map((inp) => (
-            <div key={inp.variable} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm">
-              <span className="text-slate-600">{inp.meaning}</span>
-              <span className="ltr font-mono font-bold text-slate-900">{inp.variable} = {inp.value}</span>
+            <div key={inp.variable} className="flex items-center justify-between gap-2 rounded-lg border border-line px-3 py-2 text-sm">
+              <span className="text-muted">{inp.meaning}</span>
+              <span className="ltr font-mono font-bold text-ink">{inp.variable} = {inp.value}</span>
             </div>
           ))}
         </div>
       </div>
 
       <div>
-        <h4 className="mb-2 font-bold text-slate-900">רצף המקשים</h4>
+        <h4 className="mb-2 font-bold text-ink">רצף המקשים</h4>
         <ol className="space-y-2">
           {sequence.steps.map((step, i) => (
-            <li key={i} className="rounded-xl border border-slate-200 p-3">
+            <li key={i} className="rounded-xl border border-line p-3">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-start gap-2">
                   <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">{i + 1}</span>
@@ -77,22 +77,22 @@ export default function CalculatorSteps({ sequence, interpretation, modelName }:
                 </div>
                 {step.expectDisplay && <CalcDisplay text={step.expectDisplay} small />}
               </div>
-              <p className="mt-2 text-sm text-slate-700">{step.explanation}</p>
+              <p className="mt-2 text-sm text-body">{step.explanation}</p>
             </li>
           ))}
         </ol>
       </div>
 
-      <div className="rounded-xl border-2 border-emerald-300 bg-emerald-50 p-4">
+      <div className="rounded-xl border-2 border-success-line bg-success-tint p-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <span className="font-bold text-emerald-900">התצוגה הסופית</span>
+          <span className="font-bold text-success-ink">התצוגה הסופית</span>
           <CalcDisplay text={sequence.result.display} />
         </div>
-        <p className="mt-2 text-sm text-emerald-900">{interpretation}</p>
+        <p className="mt-2 text-sm text-success-ink">{interpretation}</p>
       </div>
 
       {sequence.commonMistakes.length > 0 && (
-        <div className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
+        <div className="rounded-xl bg-warn-soft p-3 text-sm text-warn-ink">
           <h4 className="font-bold">טעויות הקלדה נפוצות</h4>
           <ul className="mt-1 list-disc space-y-1 ps-5">{sequence.commonMistakes.map((m, i) => <li key={i}>{m}</li>)}</ul>
         </div>

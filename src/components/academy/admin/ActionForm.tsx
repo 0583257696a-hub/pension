@@ -50,7 +50,7 @@ export default function ActionForm({
       }}
     >
       {fields.map((f) => (
-        <label key={f.name} className={`block text-sm font-semibold text-slate-700 ${f.type === "checkbox" ? "flex items-start gap-2" : ""}`}>
+        <label key={f.name} className={`block text-sm font-semibold text-body ${f.type === "checkbox" ? "flex items-start gap-2" : ""}`}>
           {f.type === "checkbox" ? (
             <>
               <input type="checkbox" className="mt-1" checked={!!values[f.name]} onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.checked }))} />
@@ -75,7 +75,7 @@ export default function ActionForm({
       {children}
       <div className="flex items-center gap-3">
         <button type="submit" className={btn[variant]} disabled={busy}>{busy ? "…" : submitLabel}</button>
-        {message && <span className={`text-sm ${message.ok ? "text-emerald-700" : "text-rose-700"}`}>{message.text}</span>}
+        {message && <span className={`text-sm ${message.ok ? "text-success-ink" : "text-danger-ink"}`}>{message.text}</span>}
       </div>
     </form>
   );

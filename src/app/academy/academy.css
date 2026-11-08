@@ -1,19 +1,100 @@
 @import "tailwindcss";
 
+/* Heebo (variable font, SIL OFL 1.1 — see /fonts/OFL-Heebo.txt), self-hosted from the design package. */
+@font-face {
+  font-family: "Heebo";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/heebo-hebrew.woff2") format("woff2");
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face {
+  font-family: "Heebo";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/heebo-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Heebo";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/heebo-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/*
+ * Design system "Pension AI Academy 1.0": white and neutral surfaces, near-black
+ * for headings and primary dark actions, indigo only for the main action,
+ * selected state and AI elements. Sharp corners (4px), 8px spacing grid.
+ */
 @theme {
-  --color-brand-50: #eef6ff;
-  --color-brand-100: #d9eaff;
-  --color-brand-500: #2563eb;
-  --color-brand-600: #1d4ed8;
-  --color-brand-700: #1e40af;
-  --color-brand-900: #0f1f3d;
-  --color-calc-body: #23272f;
-  --color-calc-screen: #c9d4b8;
-  --font-sans: "Heebo", "Assistant", "Segoe UI", "Arial Hebrew", Arial, sans-serif;
+  --color-ink: #101828;
+  --color-dark: #111827;
+  --color-body: #344054;
+  --color-subtle: #475467;
+  --color-muted: #667085;
+  --color-faint: #98a2b3;
+  --color-line: #e5e7eb;
+  --color-line-soft: #f2f4f7;
+  --color-input: #d0d5dd;
+  --color-surface: #f8fafc;
+  --color-surface-2: #fcfcfd;
+
+  --color-accent: #5145cd;
+  --color-accent-hover: #4338ca;
+  --color-accent-soft: #eef2ff;
+  --color-accent-line: #c7d2fe;
+  --color-accent-tint: #f5f7ff;
+
+  --color-success: #16a34a;
+  --color-success-ink: #15803d;
+  --color-success-soft: #ecfdf3;
+  --color-success-tint: #f0fdf4;
+  --color-success-line: #bbf7d0;
+  --color-warn: #d97706;
+  --color-warn-ink: #b45309;
+  --color-warn-soft: #fffaeb;
+  --color-danger: #dc2626;
+  --color-danger-ink: #b42318;
+  --color-danger-soft: #fef3f2;
+  --color-danger-line: #fecdca;
+
+  /* Legacy names used by older screens, mapped onto the design palette. */
+  --color-brand-50: #eef2ff;
+  --color-brand-100: #e0e7ff;
+  --color-brand-200: #c7d2fe;
+  --color-brand-300: #a5b4fc;
+  --color-brand-500: #5145cd;
+  --color-brand-600: #5145cd;
+  --color-brand-700: #4338ca;
+  --color-brand-900: #111827;
+
+  --color-calc-body: #2b2f36;
+  --color-calc-screen: #b8c4a6;
+
+  /* Sharp corners everywhere (design: 4px controls, 6px panels). */
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 4px;
+  --radius-xl: 6px;
+  --radius-2xl: 6px;
+  --radius-3xl: 8px;
+
+  --font-sans: "Heebo", "Assistant", system-ui, "Segoe UI", Arial, sans-serif;
+  --font-mono: ui-monospace, Menlo, Consolas, monospace;
 }
 
 .academy-root {
   font-family: var(--font-sans);
+  color: var(--color-ink);
+}
+
+.academy-root a:not([class]) {
+  color: var(--color-accent);
 }
 
 .ltr {
@@ -22,8 +103,7 @@
 }
 
 .calc-display {
-  font-family: "DSEG7 Classic", "Courier New", ui-monospace, monospace;
-  letter-spacing: 0.04em;
+  font-family: "Courier New", ui-monospace, monospace;
 }
 
 .md-table {
@@ -32,8 +112,8 @@
 }
 .md-table th,
 .md-table td {
-  border: 1px solid #e2e8f0;
-  padding: 6px 8px;
+  border: 1px solid var(--color-line);
+  padding: 8px 10px;
   text-align: start;
   vertical-align: top;
 }

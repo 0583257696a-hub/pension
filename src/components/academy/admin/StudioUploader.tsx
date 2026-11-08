@@ -43,11 +43,11 @@ export default function StudioUploader({ targetType, targetId, packageId }: { ta
     <div className="space-y-3">
       <input type="file" accept="video/mp4,video/webm" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="block w-full text-sm" />
       <button type="button" className={btn.primary} disabled={!file || busy} onClick={upload}>העלאה ובדיקה</button>
-      {status && <p className="text-sm text-slate-700">{status}</p>}
+      {status && <p className="text-sm text-body">{status}</p>}
       {checks && (
         <ul className="text-sm">
           <li>מבנה: {checks.container}{checks.durationSeconds !== null ? ` · ${Math.round(checks.durationSeconds)} שניות` : ""}{checks.width ? ` · ${checks.width}×${checks.height}` : ""}</li>
-          {checks.issues.map((i) => <li key={i} className="text-rose-700">✗ {i}</li>)}
+          {checks.issues.map((i) => <li key={i} className="text-danger-ink">✗ {i}</li>)}
         </ul>
       )}
     </div>

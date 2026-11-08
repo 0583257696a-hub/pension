@@ -33,7 +33,7 @@ First run creates `.data/academy.sqlite` and imports the course **in review stat
 | AI | `src/academy/ai` | Claude client (Opus 5.5 by default, server-side refusal fallbacks), calculator-first tutor with deterministic tools, content engine. |
 | NotebookLM | `src/academy/notebook` | `NotebookProvider` (official v1alpha endpoints only), `VideoProvider` (manual today), production packages. |
 | Storage | `src/academy/storage` | Local disk or Cloudflare R2 (SigV4 presigned URLs, no SDK); automatic video file checks. |
-| UI | `src/app/academy`, `src/components/academy` | Tailwind v4, RTL, responsive. Admin under `/academy/admin`. Deterministic calculator render at `/render/calculator/[questionId]`. |
+| UI | `src/app/academy`, `src/components/academy` | Design system "Pension AI Academy 1.0" (tokens in `src/app/academy/academy.css`, Heebo self-hosted under `public/fonts`, OFL). Route groups by frame: `(site)` public pages, `(app)` student app shell, `(player)` lesson player, `admin` dark admin shell. Calculator walkthrough with highlighted FC-200V keys driven by the simulator trace. Deterministic calculator render at `/render/calculator/[questionId]`. |
 
 ### Deploying to Cloudflare Workers
 

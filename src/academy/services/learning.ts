@@ -395,4 +395,98 @@ export class LearningService {
       exams: examViews,
     };
   }
+
+  /** Every quiz the user can see, with question counts, lock state and last result. */
+  async listQuizzes(user: User) {
+    const course = await this.getCourse();
+    if (!course) return [];
+    const entitlement = await this.getEntitlement(user, course.id);
+    const quizzes = await this.db.all<QuizRow & { lesson_title: string | null; lesson_status: string | null; lesson_access: string | null; unit_title: string | null; unit_position: number | null; lesson_position: number | null }>(
+      `SELECT z.*, l.title AS lesson_title, l.status AS lesson_status, l.access AS lesson_access, u.title AS unit_title, u.position AS unit_position, l.position AS lesson_position
+       FROM quizzes z LEFT JOIN lessons l ON l.id = z.lesson_id LEFT JOIN units u ON u.id = z.unit_id
+       WHERE z.course_id = ? ORDER BY u.position, CASE z.kind WHEN 'lesson' THEN 0 WHEN 'unit' THEN 1 ELSE 2 END, l.position`,
+      [course.id],
+    );
+    const out = [];
+    for (const z of quizzes) {
+      const count = await this.countVisible(user, parseJson<string[]>(z.question_ids_json, []));
+      if (!count) continue;
+      const allowed = z.lesson_id
+        ? decideLessonAccess(user, { access: (z.lesson_access ?? "paid") as "free" | "paid", status: (z.lesson_status ?? "draft") as "draft" | "review" | "published" }, entitlement).allowed
+        : entitlement.hasAccess;
+      const last = await this.db.get<{ score: number; passed: number; finished_at: string }>(
+        "SELECT score, passed, finished_at FROM quiz_attempts WHERE user_id = ? AND quiz_id = ? AND finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT 1",
+        [user.id, z.id],
+      );
+      out.push({ id: z.id, kind: z.kind, title: z.title, unitTitle: z.unit_title, count, timeLimit: z.time_limit_minutes, passScore: z.pass_score, allowed, last });
+    }
+    return out;
+  }
+
+  /** Accuracy per lesson from the student's own attempts (practice and quizzes). */
+  async topicAccuracy(user: User) {
+    const rows = await this.db.all<{ lesson_id: string; slug: string; title: string; unit_title: string; total: number; correct: number }>(
+      `SELECT l.id AS lesson_id, l.slug, l.title, u.title AS unit_title, COUNT(*) AS total, SUM(a.is_correct) AS correct
+       FROM question_attempts a JOIN questions q ON q.id = a.question_id JOIN lessons l ON l.id = q.lesson_id JOIN units u ON u.id = l.unit_id
+       WHERE a.user_id = ? GROUP BY l.id ORDER BY (1.0 * SUM(a.is_correct) / COUNT(*)) ASC, COUNT(*) DESC`,
+      [user.id],
+    );
+    return rows.map((r) => ({ ...r, total: Number(r.total), correct: Number(r.correct), accuracy: Math.round((Number(r.correct) / Number(r.total)) * 100) }));
+  }
+
+  /** Everything the dashboard shows beyond the syllabus: unit progress, weak topics, recent activity. */
+  async getDashboardInsights(user: User) {
+    const dashboard = await this.getDashboard(user);
+    if (!dashboard) return null;
+    const topics = await this.topicAccuracy(user);
+    const nextUnit = dashboard.next ? dashboard.units.find((u) => u.lessons.some((l) => l.id === dashboard.next!.id)) ?? null : null;
+    const unitLessons = nextUnit ? nextUnit.lessons.filter((l) => l.status === "published") : [];
+    const nextIndex = nextUnit ? unitLessons.findIndex((l) => l.id === dashboard.next!.id) : -1;
+    const nextQuiz = dashboard.next
+      ? await this.db.get<{ id: string; title: string; question_ids_json: string }>("SELECT id, title, question_ids_json FROM quizzes WHERE lesson_id = ? AND kind = 'lesson'", [dashboard.next.id])
+      : null;
+    const week = new Date(Date.now() - 7 * 86400_000).toISOString();
+    const weekStats = await this.db.get<{ total: number; correct: number }>(
+      "SELECT COUNT(*) AS total, COALESCE(SUM(is_correct),0) AS correct FROM question_attempts WHERE user_id = ? AND created_at >= ?",
+      [user.id, week],
+    );
+    const practice = await this.db.all<{ day: string; lesson_title: string; total: number; correct: number; last: string }>(
+      `SELECT substr(a.created_at, 1, 10) AS day, l.title AS lesson_title, COUNT(*) AS total, SUM(a.is_correct) AS correct, MAX(a.created_at) AS last
+       FROM question_attempts a JOIN questions q ON q.id = a.question_id JOIN lessons l ON l.id = q.lesson_id
+       WHERE a.user_id = ? AND a.context = 'practice' GROUP BY day, l.id ORDER BY last DESC LIMIT 8`,
+      [user.id],
+    );
+    const quizzes = await this.db.all<{ title: string; kind: string; score: number; passed: number; finished_at: string }>(
+      `SELECT z.title, z.kind, a.score, a.passed, a.finished_at FROM quiz_attempts a JOIN quizzes z ON z.id = a.quiz_id
+       WHERE a.user_id = ? AND a.finished_at IS NOT NULL ORDER BY a.finished_at DESC LIMIT 8`,
+      [user.id],
+    );
+    const activity = [
+      ...practice.map((p) => ({ kind: "practice" as const, title: `תרגול · ${Number(p.total)} שאלות`, topic: p.lesson_title, result: `${Number(p.correct)}/${Number(p.total)}`, passed: null as boolean | null, at: p.last })),
+      ...quizzes.map((q) => ({
+        kind: "quiz" as const,
+        title: q.kind === "simulation" ? "סימולציה" : q.kind === "unit" ? "מבחן פרק" : "מבחן סיכום",
+        topic: q.title.replace(/^(מבחן סיכום|מבחן פרק|סימולציה בתנאי מבחן): /, ""),
+        result: String(q.score),
+        passed: !!q.passed,
+        at: q.finished_at,
+      })),
+    ]
+      .sort((a, b) => (a.at < b.at ? 1 : -1))
+      .slice(0, 6);
+    const lockedNext = dashboard.next
+      ? null
+      : dashboard.units.flatMap((u) => u.lessons.map((l) => ({ ...l, unitTitle: u.title }))).find((l) => l.status === "published" && !l.progress?.completed && l.lockReason === "subscription_required") ?? null;
+    const lessonsInProgress = dashboard.units.flatMap((u) => u.lessons).filter((l) => l.status === "published" && l.progress && !l.progress.completed).length;
+    return {
+      ...dashboard,
+      nextUnit: nextUnit ? { title: nextUnit.title, position: nextIndex + 1, total: unitLessons.length, completed: unitLessons.filter((l) => l.progress?.completed).length } : null,
+      nextQuiz: nextQuiz && JSON.parse(nextQuiz.question_ids_json).length ? { id: nextQuiz.id, title: nextQuiz.title } : null,
+      weekAccuracy: weekStats && Number(weekStats.total) ? Math.round((Number(weekStats.correct) / Number(weekStats.total)) * 100) : null,
+      weakTopics: topics.filter((t) => t.accuracy < 80).slice(0, 3),
+      lockedNext: lockedNext ? { slug: lockedNext.slug, title: lockedNext.title, unitTitle: lockedNext.unitTitle } : null,
+      lessonsInProgress,
+      activity,
+    };
+  }
 }

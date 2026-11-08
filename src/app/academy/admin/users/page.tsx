@@ -31,7 +31,7 @@ export default async function UsersAdmin() {
     <div className="space-y-4">
       <Card>
         <h2 className="text-lg font-extrabold">תלמידים ומנויים</h2>
-        <p className="mt-1 text-sm text-slate-600">
+        <p className="mt-1 text-sm text-muted">
           עד לחיבור ספק סליקה מאומת, הפעלת מנוי נעשית ידנית לאחר תשלום מאומת (למשל חשבונית והעברה בנקאית), עם אסמכתא. אין במערכת תשלום מדומה.
         </p>
       </Card>
@@ -43,14 +43,14 @@ export default async function UsersAdmin() {
           <Card key={u.id}>
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <div className="font-bold">{u.full_name || "(ללא שם)"} <span className="ltr text-sm font-normal text-slate-500">{u.email}</span></div>
+                <div className="font-bold">{u.full_name || "(ללא שם)"} <span className="ltr text-sm font-normal text-muted">{u.email}</span></div>
                 <div className="mt-1 flex flex-wrap gap-2 text-xs">
                   <Badge tone={u.role === "admin" ? "violet" : u.role === "reviewer" ? "blue" : "slate"}>{u.role === "admin" ? "מנהל" : u.role === "reviewer" ? "בודק תוכן" : "תלמיד"}</Badge>
                   {u.status === "blocked" && <Badge tone="red">חסום</Badge>}
                   <Badge tone={subTone}>{subLabel}{sub && (sub.current_period_end || sub.trial_ends_at) ? ` עד ${new Date((sub.status === "trial" ? sub.trial_ends_at : sub.current_period_end) ?? "").toLocaleDateString("he-IL")}` : ""}</Badge>
-                  <span className="text-slate-500">{p?.done ?? 0} שיעורים הושלמו · {p?.attempts ?? 0} תשובות</span>
+                  <span className="text-muted">{p?.done ?? 0} שיעורים הושלמו · {p?.attempts ?? 0} תשובות</span>
                 </div>
-                {sub?.note && <p className="mt-1 text-xs text-slate-500">אסמכתא: {sub.note}</p>}
+                {sub?.note && <p className="mt-1 text-xs text-muted">אסמכתא: {sub.note}</p>}
               </div>
               {isAdmin && u.id !== me.id && (
                 <div className="flex flex-wrap gap-2">

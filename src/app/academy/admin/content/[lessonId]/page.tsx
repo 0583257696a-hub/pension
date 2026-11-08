@@ -37,14 +37,14 @@ export default async function LessonReview({ params }: { params: Promise<{ lesso
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="text-xl font-extrabold">{lesson.title}</h2>
-            <p className="text-sm text-slate-600">{lesson.description}</p>
+            <p className="text-sm text-muted">{lesson.description}</p>
             <div className="mt-2 flex flex-wrap gap-2">
               <Badge tone={lesson.status === "published" ? "green" : "amber"}>{lesson.status === "published" ? "פורסם" : lesson.status === "review" ? "בבדיקה" : "טיוטה"}</Badge>
               <Badge>{lesson.access === "free" ? "שיעור חינמי" : "למנויים"}</Badge>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link href={`/academy/lesson/${lesson.slug}`} className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-bold">תצוגה מקדימה</Link>
+            <Link href={`/academy/lesson/${lesson.slug}`} className="rounded-xl border border-input px-3 py-2 text-sm font-bold">תצוגה מקדימה</Link>
             {isAdmin && lesson.status !== "published" && (
               <ActionButton action="lesson.status" payload={{ lessonId, decision: "publish" }} label="פרסום השיעור לתלמידים" variant="primary"
                 confirm={lesson.access === "paid" ? "השיעור יפורסם למנויים (תוכן בתשלום). רק שאלות שאושרו יוצגו. לאשר פרסום?" : "השיעור יפורסם לכל הנרשמים. לאשר?"} />
@@ -69,7 +69,7 @@ export default async function LessonReview({ params }: { params: Promise<{ lesso
         <Card>
           <h3 className="font-extrabold">דוגמאות פתורות</h3>
           {detail.examples.map((e) => (
-            <div key={e.title} className="mt-3 rounded-xl border border-slate-200 p-3">
+            <div key={e.title} className="mt-3 rounded-xl border border-line p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="font-bold">{e.title}</span>
                 <div className="flex gap-2">
@@ -101,29 +101,29 @@ export default async function LessonReview({ params }: { params: Promise<{ lesso
             <div className="mt-3 font-semibold"><Md text={q.stem_md} /></div>
             <ul className="mt-2 grid gap-1 text-sm">
               {q.options.map((o) => (
-                <li key={o.key} className={`rounded-lg px-3 py-1.5 ${o.key === q.correct_key ? "bg-emerald-50 font-bold text-emerald-900" : "bg-slate-50"}`}>
-                  {o.key.toUpperCase()}. {o.text}{o.value !== undefined ? <span className="ltr ms-2 text-xs text-slate-500">[{o.value}]</span> : null}
+                <li key={o.key} className={`rounded-lg px-3 py-1.5 ${o.key === q.correct_key ? "bg-success-tint font-bold text-success-ink" : "bg-surface"}`}>
+                  {o.key.toUpperCase()}. {o.text}{o.value !== undefined ? <span className="ltr ms-2 text-xs text-muted">[{o.value}]</span> : null}
                 </li>
               ))}
             </ul>
 
-            <details className="mt-3 rounded-xl border border-slate-200 p-3" open={v.status === "failed"}>
+            <details className="mt-3 rounded-xl border border-line p-3" open={v.status === "failed"}>
               <summary className="cursor-pointer text-sm font-bold">דוח בדיקה אוטומטית ({v.checks.filter((c) => c.ok).length}/{v.checks.length})</summary>
-              {v.check && <div className="ltr mt-2 rounded bg-slate-50 px-2 py-1 text-start font-mono text-xs">{v.check.expression}</div>}
+              {v.check && <div className="ltr mt-2 rounded bg-surface px-2 py-1 text-start font-mono text-xs">{v.check.expression}</div>}
               <ul className="mt-2 space-y-1 text-sm">
                 {v.checks.map((c, i) => (
-                  <li key={i} className={c.ok ? "text-emerald-800" : "text-rose-700"}>{c.ok ? "✓" : "✗"} {c.label}: <span className="text-xs">{c.detail}</span></li>
+                  <li key={i} className={c.ok ? "text-success-ink" : "text-danger-ink"}>{c.ok ? "✓" : "✗"} {c.label}: <span className="text-xs">{c.detail}</span></li>
                 ))}
               </ul>
             </details>
 
             <div className="mt-3 grid gap-3 lg:grid-cols-2">
-              <details className="rounded-xl border border-slate-200 p-3" open>
+              <details className="rounded-xl border border-line p-3" open>
                 <summary className="cursor-pointer text-sm font-bold">פתרון במחשבון {q.calculatorVerdict ? (q.calculatorVerdict.verified ? "(מאומת, מוצג לתלמידים)" : "(לא מוצג לתלמידים)") : "(אין)"}</summary>
                 {q.calculator && q.calculatorVerdict ? (
                   <div className="mt-2">
                     {!q.calculatorVerdict.verified && (
-                      <p className="mb-2 rounded-lg bg-amber-50 px-2 py-1 text-xs text-amber-900">
+                      <p className="mb-2 rounded-lg bg-warn-soft px-2 py-1 text-xs text-warn-ink">
                         {q.calculatorVerdict.simulation.ok
                           ? `ממתין לאימות העובדות: ${[...q.calculatorVerdict.pendingFacts, ...q.calculatorVerdict.rejectedFacts].join(", ")}`
                           : `הסימולטור נכשל: ${q.calculatorVerdict.simulation.errors.join(" | ")}`}
@@ -133,24 +133,24 @@ export default async function LessonReview({ params }: { params: Promise<{ lesso
                     <Link className="mt-2 inline-block text-xs font-bold text-brand-700" href={`/render/calculator/${q.id}`}>הדמיית המחשבון (מקטע לסרטון) ←</Link>
                   </div>
                 ) : (
-                  <p className="mt-2 text-sm text-slate-500">אין פתרון במחשבון. לתלמידים יוצג הפתרון המתמטי.</p>
+                  <p className="mt-2 text-sm text-muted">אין פתרון במחשבון. לתלמידים יוצג הפתרון המתמטי.</p>
                 )}
               </details>
-              <details className="rounded-xl border border-slate-200 p-3" open>
+              <details className="rounded-xl border border-line p-3" open>
                 <summary className="cursor-pointer text-sm font-bold">פתרון באמצעות נוסחה</summary>
                 <p className="mt-2 text-sm">{q.short_explanation_md}</p>
                 <ol className="mt-2 list-decimal space-y-1 ps-5 text-sm">{q.steps.map((s, i) => <li key={i}><b>{s.title}:</b> {s.body}</li>)}</ol>
               </details>
             </div>
 
-            <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-3 lg:flex-row lg:items-start">
+            <div className="mt-4 flex flex-col gap-3 border-t border-line-soft pt-3 lg:flex-row lg:items-start">
               {q.status !== "approved" && (
                 <ActionButton action="question.review" payload={{ questionId: q.id, decision: "approve", note: "" }} label="אישור מקצועי" variant="primary" />
               )}
               <ActionButton action="question.reverify" payload={{ questionId: q.id }} label="הרצת בדיקה מחדש" variant="ghost" />
               <div className="flex-1">
                 <details>
-                  <summary className="cursor-pointer text-sm font-bold text-slate-700">דחייה או בקשת תיקון</summary>
+                  <summary className="cursor-pointer text-sm font-bold text-body">דחייה או בקשת תיקון</summary>
                   <div className="mt-2">
                     <ActionForm action="question.review" payload={{ questionId: q.id }} submitLabel="שמירת החלטה" variant="secondary"
                       fields={[
@@ -168,7 +168,7 @@ export default async function LessonReview({ params }: { params: Promise<{ lesso
       {detail.reviews.length > 0 && (
         <Card>
           <h3 className="font-extrabold">היסטוריית החלטות</h3>
-          <ul className="mt-2 space-y-1 text-xs text-slate-600">
+          <ul className="mt-2 space-y-1 text-xs text-muted">
             {detail.reviews.map((r, i) => (
               <li key={i}>{new Date(r.created_at).toLocaleString("he-IL")} · {r.email ?? "?"} · {r.action}{r.note ? ` · ${r.note}` : ""} · {r.target_id}</li>
             ))}

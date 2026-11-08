@@ -28,7 +28,7 @@ export default async function AiAdmin() {
     <div className="space-y-4">
       <Card>
         <h2 className="text-lg font-extrabold">מנוע יצירת תוכן</h2>
-        <p className="mt-1 text-sm text-slate-600">
+        <p className="mt-1 text-sm text-muted">
           Claude כותב טיוטות מתוך הסילבוס וחומרי הלימוד המורשים בלבד. כל שאלה עוברת בדיקה מול המנוע המתמטי ובסימולטור המחשבון, ונכנסת לסטטוס &quot;ממתינה לאישור&quot;. דבר לא מתפרסם בלי אישור מקצועי.
         </p>
         <div className="mt-2"><Badge tone={configured ? "green" : "amber"}>{configured ? `Claude מחובר · ${getConfig().anthropic.model}` : "לא הוגדר ANTHROPIC_API_KEY. אפשר להעלות חומרים, אבל לא ליצור תוכן."}</Badge></div>
@@ -46,10 +46,10 @@ export default async function AiAdmin() {
                   { name: "text", label: "תוכן (טקסט מלא)", type: "textarea", required: true },
                 ]} />
             </div>
-          ) : <p className="mt-2 text-sm text-slate-500">העלאת חומרים מותרת למנהלים.</p>}
+          ) : <p className="mt-2 text-sm text-muted">העלאת חומרים מותרת למנהלים.</p>}
           <ul className="mt-4 space-y-1 text-sm">
-            {materials.map((m) => <li key={m.id} className="flex justify-between gap-2"><span>[{m.kind}] {m.title}</span><span className="text-xs text-slate-500">{m.len.toLocaleString()} תווים</span></li>)}
-            {!materials.length && <li className="text-slate-500">עדיין לא הועלו חומרים.</li>}
+            {materials.map((m) => <li key={m.id} className="flex justify-between gap-2"><span>[{m.kind}] {m.title}</span><span className="text-xs text-muted">{m.len.toLocaleString()} תווים</span></li>)}
+            {!materials.length && <li className="text-muted">עדיין לא הועלו חומרים.</li>}
           </ul>
         </Card>
 
@@ -67,7 +67,7 @@ export default async function AiAdmin() {
                 ]} />
             </div>
           ) : (
-            <p className="mt-2 text-sm text-slate-500">{configured ? "יצירת תוכן מותרת למנהלים." : "יש להגדיר מפתח API כדי ליצור תוכן."}</p>
+            <p className="mt-2 text-sm text-muted">{configured ? "יצירת תוכן מותרת למנהלים." : "יש להגדיר מפתח API כדי ליצור תוכן."}</p>
           )}
         </Card>
       </div>
@@ -79,16 +79,16 @@ export default async function AiAdmin() {
             const output = parseJson<unknown>(job.output_json, null);
             const questionItems = job.kind === "questions" && Array.isArray(output) ? (output as Array<{ draft: { stem: string }; report: { status: string } }>) : null;
             return (
-              <li key={job.id} className="rounded-xl border border-slate-200 p-3">
+              <li key={job.id} className="rounded-xl border border-line p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-bold">{KIND[job.kind] ?? job.kind}</span>
                     <Badge tone={job.status === "done" ? "blue" : job.status === "applied" ? "green" : job.status === "failed" ? "red" : "slate"}>{job.status}</Badge>
-                    <span className="text-xs text-slate-500">{new Date(job.created_at).toLocaleString("he-IL")} · {job.model}</span>
+                    <span className="text-xs text-muted">{new Date(job.created_at).toLocaleString("he-IL")} · {job.model}</span>
                   </div>
                   {job.status === "done" && isAdmin && <ActionButton action="ai.apply" payload={{ jobId: job.id }} label="החלה כטיוטה לבדיקה" variant="primary" />}
                 </div>
-                {job.error && <p className="mt-2 text-sm text-rose-700">{job.error}</p>}
+                {job.error && <p className="mt-2 text-sm text-danger-ink">{job.error}</p>}
                 {questionItems && (
                   <ul className="mt-2 space-y-1 text-sm">
                     {questionItems.map((item, i) => (
@@ -100,15 +100,15 @@ export default async function AiAdmin() {
                   </ul>
                 )}
                 {output !== null && !questionItems && (
-                  <details className="mt-2"><summary className="cursor-pointer text-xs font-bold text-slate-600">פלט</summary><pre className="ltr mt-2 max-h-80 overflow-auto rounded bg-slate-50 p-2 text-start text-xs">{JSON.stringify(output, null, 2)}</pre></details>
+                  <details className="mt-2"><summary className="cursor-pointer text-xs font-bold text-muted">פלט</summary><pre className="ltr mt-2 max-h-80 overflow-auto rounded bg-surface p-2 text-start text-xs">{JSON.stringify(output, null, 2)}</pre></details>
                 )}
               </li>
             );
           })}
-          {!jobs.length && <li className="text-sm text-slate-500">עדיין לא הורצו משימות.</li>}
+          {!jobs.length && <li className="text-sm text-muted">עדיין לא הורצו משימות.</li>}
         </ul>
       </Card>
-      {course && <p className="text-xs text-slate-500">הקורס: {course.title}</p>}
+      {course && <p className="text-xs text-muted">הקורס: {course.title}</p>}
     </div>
   );
 }

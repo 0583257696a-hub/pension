@@ -17,7 +17,7 @@ export default async function QuizPage({ params }: { params: Promise<{ id: strin
     if (error instanceof AccessDeniedError) {
       return (
         <Card className="mx-auto max-w-lg text-center">
-          <p className="text-slate-700">{error.message}</p>
+          <p className="text-body">{error.message}</p>
           <Link className={`${btn.primary} mt-4`} href="/academy/account">לניהול המנוי</Link>
         </Card>
       );

@@ -37,7 +37,7 @@ export default function ActionButton({
       >
         {busy ? "…" : label}
       </button>
-      {error && <span className="max-w-xs text-xs text-rose-700">{error}</span>}
+      {error && <span className="max-w-xs text-xs text-danger-ink">{error}</span>}
     </span>
   );
 }

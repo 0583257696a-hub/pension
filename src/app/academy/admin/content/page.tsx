@@ -23,7 +23,7 @@ export default async function ContentAdmin() {
       <Card className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-extrabold">{course.title}</h2>
-          <p className="text-sm text-slate-600">מחשבון הקורס: {course.calculator_model} · מחיר {course.price_ils} ₪ · ניסיון {course.trial_days} ימים</p>
+          <p className="text-sm text-muted">מחשבון הקורס: {course.calculator_model} · מחיר {course.price_ils} ₪ · ניסיון {course.trial_days} ימים</p>
         </div>
         {user.role === "admin" && (
           <ActionButton action="content.import" label="ייבוא מחדש של תוכן הקורס" confirm="הייבוא מעדכן תכנים קיימים ומחזיר לבדיקה פריטים שהשתנו. התקדמות התלמידים נשמרת. להמשיך?" />
@@ -37,10 +37,10 @@ export default async function ContentAdmin() {
           </div>
           <div className="mt-3 overflow-x-auto">
             <table className="w-full min-w-[640px] text-sm">
-              <thead className="text-start text-xs text-slate-500">
+              <thead className="text-start text-xs text-muted">
                 <tr><th className="py-2 text-start">שיעור</th><th className="text-start">סטטוס</th><th className="text-start">גישה</th><th className="text-start">שאלות (מאושרות/סה״כ)</th><th className="text-start">בדיקה</th><th /></tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line-soft">
                 {unit.lessons.map((l) => {
                   const [label, tone] = LESSON_STATUS[l.status] ?? ["?", "slate"];
                   return (

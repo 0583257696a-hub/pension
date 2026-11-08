@@ -63,13 +63,13 @@ export default function QuizRunner({ quizId, questions, timeLimitMinutes, passSc
     <div className="space-y-4">
       {remaining !== null && !result && (
         <div className="sticky top-16 z-30 flex justify-center">
-          <span className={`ltr rounded-full px-4 py-1 text-sm font-bold shadow ${remaining < 120 ? "bg-rose-600 text-white" : "bg-slate-900 text-white"}`}>
+          <span className={`ltr rounded-full px-4 py-1 text-sm font-bold shadow ${remaining < 120 ? "bg-danger text-white" : "bg-ink text-white"}`}>
             {String(Math.floor(remaining / 60)).padStart(2, "0")}:{String(remaining % 60).padStart(2, "0")}
           </span>
         </div>
       )}
       {result && (
-        <div className={`rounded-2xl p-5 ${result.passed ? "bg-emerald-50 text-emerald-900" : "bg-amber-50 text-amber-900"}`}>
+        <div className={`rounded-2xl p-5 ${result.passed ? "bg-success-tint text-success-ink" : "bg-warn-soft text-warn-ink"}`}>
           <div className="text-2xl font-extrabold">ציון: {result.score}</div>
           <div className="mt-1 text-sm">{result.correct} מתוך {result.total} תשובות נכונות · ציון עובר {result.passScore}. {result.passed ? "עברת בהצלחה!" : "כדאי לחזור על החומר ולנסות שוב."}</div>
         </div>
@@ -77,16 +77,16 @@ export default function QuizRunner({ quizId, questions, timeLimitMinutes, passSc
       {questions.map((q, i) => {
         const r = resultById.get(q.id);
         return (
-          <div key={q.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="mb-2 text-sm font-semibold text-slate-500">שאלה {i + 1}</div>
-            <div className="font-semibold text-slate-900"><Md text={q.stem} /></div>
+          <div key={q.id} className="rounded-2xl border border-line bg-white p-4">
+            <div className="mb-2 text-sm font-semibold text-muted">שאלה {i + 1}</div>
+            <div className="font-semibold text-ink"><Md text={q.stem} /></div>
             <div className="mt-3 grid gap-2">
               {q.options.map((o) => {
                 const chosen = answers[q.id] === o.key;
                 const correct = r && r.correctKey === o.key;
                 const wrong = r && chosen && !r.isCorrect;
                 return (
-                  <label key={o.key} className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 px-3 py-2.5 text-sm ${correct ? "border-emerald-500 bg-emerald-50" : wrong ? "border-rose-500 bg-rose-50" : chosen ? "border-brand-500 bg-brand-50" : "border-slate-200"}`}>
+                  <label key={o.key} className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 px-3 py-2.5 text-sm ${correct ? "border-success bg-success-tint" : wrong ? "border-danger bg-danger-soft" : chosen ? "border-brand-500 bg-brand-50" : "border-line"}`}>
                     <input type="radio" className="mt-1" name={q.id} disabled={!!result} checked={chosen} onChange={() => setAnswers((a) => ({ ...a, [q.id]: o.key }))} />
                     <span>{o.text}</span>
                   </label>
@@ -115,10 +115,10 @@ export default function QuizRunner({ quizId, questions, timeLimitMinutes, passSc
       {!result && (
         <div className="flex items-center gap-3">
           <button type="button" className={btn.primary} disabled={busy} onClick={() => void submit()}>הגשת המבחן</button>
-          <span className="text-sm text-slate-500">ענית על {Object.keys(answers).length} מתוך {questions.length} · ציון עובר {passScore}</span>
+          <span className="text-sm text-muted">ענית על {Object.keys(answers).length} מתוך {questions.length} · ציון עובר {passScore}</span>
         </div>
       )}
-      {error && <p className="text-sm text-rose-700">{error}</p>}
+      {error && <p className="text-sm text-danger-ink">{error}</p>}
     </div>
   );
 }

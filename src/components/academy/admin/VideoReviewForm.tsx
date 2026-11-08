@@ -6,8 +6,8 @@ import ActionForm from "./ActionForm";
 export default function VideoReviewForm({ assetId, checklist }: { assetId: string; checklist: Array<{ key: string; label: string }> }) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-        <h4 className="mb-2 font-bold text-emerald-900">אישור אקדמי ובדיקת רצף המחשבון</h4>
+      <div className="rounded-xl border border-success-line bg-success-tint p-3">
+        <h4 className="mb-2 font-bold text-success-ink">אישור אקדמי ובדיקת רצף המחשבון</h4>
         <ActionForm
           action="video.review"
           payload={{ assetId, decision: "approve" }}
@@ -18,8 +18,8 @@ export default function VideoReviewForm({ assetId, checklist }: { assetId: strin
           ]}
         />
       </div>
-      <div className="rounded-xl border border-rose-200 bg-rose-50 p-3">
-        <h4 className="mb-2 font-bold text-rose-900">דחייה</h4>
+      <div className="rounded-xl border border-danger-line bg-danger-soft p-3">
+        <h4 className="mb-2 font-bold text-danger-ink">דחייה</h4>
         <ActionForm action="video.review" payload={{ assetId, decision: "reject", checklist: {} }} submitLabel="דחיית הגרסה" variant="danger"
           fields={[{ name: "note", label: "מה צריך לתקן", type: "textarea", required: true }]} />
       </div>

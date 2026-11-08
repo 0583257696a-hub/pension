@@ -31,13 +31,13 @@ export default function BillingActions({ canStartTrial, canCancel, checkoutAvail
       <div className="flex flex-wrap gap-2">
         {canStartTrial && <button type="button" className={btn.primary} disabled={busy} onClick={() => run("trial")}>התחלת תקופת ניסיון</button>}
         {checkoutAvailable ? (
-          <button type="button" className={btn.secondary} disabled={busy} onClick={() => run("checkout")}>רכישת מנוי</button>
+          <button type="button" className={btn.dark} disabled={busy} onClick={() => run("checkout")}>רכישת מנוי</button>
         ) : (
-          <span className="rounded-xl bg-slate-100 px-3 py-2 text-sm text-slate-600">רכישה מקוונת תיפתח בקרוב. להצטרפות כמנוי פנו לצוות האקדמיה.</span>
+          <span className="rounded-md bg-surface px-3 py-2 text-sm text-muted">רכישה מקוונת תיפתח בקרוב. להצטרפות כמנוי פנו לצוות האקדמיה.</span>
         )}
         {canCancel && <button type="button" className={btn.ghost} disabled={busy} onClick={() => run("cancel")}>ביטול חידוש המנוי</button>}
       </div>
-      {message && <p className="text-sm text-rose-700">{message}</p>}
+      {message && <p className="text-sm text-danger-ink">{message}</p>}
     </div>
   );
 }

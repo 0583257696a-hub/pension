@@ -40,6 +40,7 @@ export default async function RenderCalculator({ params, searchParams }: {
       frames={frames}
       steps={calc.sequence.steps.map((s) => ({ explanation: s.explanation }))}
       title={`${calc.sequence.mode}: ${calc.sequence.result.display}`}
+      mode={calc.sequence.mode}
       modelName={getCalculator(model).model.name}
       verified={verdict.verified}
       autoplay={query.autoplay === "1"}

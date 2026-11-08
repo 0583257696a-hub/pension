@@ -45,7 +45,7 @@ export default async function StudioTarget({ params }: { params: Promise<{ type:
     <div className="space-y-4">
       <Link href="/academy/admin/studio" className="text-sm font-semibold text-brand-700">← Video Studio</Link>
       <Card>
-        <div className="text-xs text-slate-500">{type === "lesson" ? "סרטון שיעור" : "סרטון פתרון"} · {input.lessonTitle}</div>
+        <div className="text-xs text-muted">{type === "lesson" ? "סרטון שיעור" : "סרטון פתרון"} · {input.lessonTitle}</div>
         <h2 className="text-xl font-extrabold">{input.title}</h2>
         {input.question && (
           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -63,11 +63,11 @@ export default async function StudioTarget({ params }: { params: Promise<{ type:
         </div>
         {pkg && (
           <div className="mt-4 space-y-3">
-            <p className="text-xs text-slate-500">נוצרה {new Date(pkg.created_at).toLocaleString("he-IL")} · {pkg.generated_by === "claude" ? "תסריט מ-Claude, נבדק מול המספרים המאומתים" : "תבנית דטרמיניסטית"}</p>
-            <details className="rounded-xl border border-slate-200 p-3" open><summary className="cursor-pointer font-bold">תסריט</summary><Md text={pkg.script_md} /></details>
-            <details className="rounded-xl border border-slate-200 p-3"><summary className="cursor-pointer font-bold">הנחיות ל-NotebookLM</summary><pre className="ltr mt-2 whitespace-pre-wrap text-start text-xs">{pkg.instructions_md}</pre></details>
-            <details className="rounded-xl border border-slate-200 p-3"><summary className="cursor-pointer font-bold">מסמכי מקור ({pkg.sources.length})</summary>
-              {pkg.sources.map((s) => <div key={s.title} className="mt-3 border-t border-slate-100 pt-2"><div className="text-sm font-bold">{s.title}</div><Md text={s.content} className="text-sm" /></div>)}
+            <p className="text-xs text-muted">נוצרה {new Date(pkg.created_at).toLocaleString("he-IL")} · {pkg.generated_by === "claude" ? "תסריט מ-Claude, נבדק מול המספרים המאומתים" : "תבנית דטרמיניסטית"}</p>
+            <details className="rounded-xl border border-line p-3" open><summary className="cursor-pointer font-bold">תסריט</summary><Md text={pkg.script_md} /></details>
+            <details className="rounded-xl border border-line p-3"><summary className="cursor-pointer font-bold">הנחיות ל-NotebookLM</summary><pre className="ltr mt-2 whitespace-pre-wrap text-start text-xs">{pkg.instructions_md}</pre></details>
+            <details className="rounded-xl border border-line p-3"><summary className="cursor-pointer font-bold">מסמכי מקור ({pkg.sources.length})</summary>
+              {pkg.sources.map((s) => <div key={s.title} className="mt-3 border-t border-line-soft pt-2"><div className="text-sm font-bold">{s.title}</div><Md text={s.content} className="text-sm" /></div>)}
             </details>
           </div>
         )}
@@ -75,23 +75,23 @@ export default async function StudioTarget({ params }: { params: Promise<{ type:
 
       <Card>
         <h3 className="font-extrabold">2. מחברת NotebookLM</h3>
-        <p className="mt-1 text-sm text-slate-600">
+        <p className="mt-1 text-sm text-muted">
           {provider.automatic
             ? "המערכת יוצרת מחברת ב-Gemini Notebook Enterprise ומעלה את מסמכי המקור דרך ה-API הרשמי. יצירת ה-Video Overview נעשית ידנית בממשק NotebookLM."
             : "לא הוגדרה גישת API. צרו מחברת ב-NotebookLM, העלו את מסמכי המקור מחבילת ההפקה, והדביקו כאן את הקישור."}
         </p>
         {pkg && !notebook && <div className="mt-3"><ActionButton action="studio.notebook" payload={{ packageId: pkg.id }} label="הכנת מחברת NotebookLM" variant="primary" /></div>}
-        {!pkg && <p className="mt-2 text-sm text-slate-500">יש ליצור קודם חבילת הפקה.</p>}
+        {!pkg && <p className="mt-2 text-sm text-muted">יש ליצור קודם חבילת הפקה.</p>}
         {notebook && (
           <div className="mt-3 space-y-3 text-sm">
             <div className="flex flex-wrap items-center gap-2">
               <Badge tone={notebook.status === "ready" ? "green" : notebook.status === "error" ? "red" : "amber"}>{notebook.status}</Badge>
-              <span className="text-slate-600">{notebook.title}</span>
+              <span className="text-muted">{notebook.title}</span>
               {notebook.external_url && <a className="font-bold text-brand-700" href={notebook.external_url} target="_blank" rel="noreferrer">פתיחת המחברת ←</a>}
             </div>
-            {notebook.error && <p className="text-rose-700">{notebook.error}</p>}
+            {notebook.error && <p className="text-danger-ink">{notebook.error}</p>}
             <ul className="space-y-1">
-              {notebook.sources.map((s) => <li key={s.id} className="flex justify-between gap-2"><span>{s.title}</span><span className="text-xs text-slate-500">{s.status}{s.status_raw ? ` (${s.status_raw})` : ""}</span></li>)}
+              {notebook.sources.map((s) => <li key={s.id} className="flex justify-between gap-2"><span>{s.title}</span><span className="text-xs text-muted">{s.status}{s.status_raw ? ` (${s.status_raw})` : ""}</span></li>)}
             </ul>
             <div className="flex flex-wrap gap-2">
               {provider.automatic && <ActionButton action="studio.notebookRefresh" payload={{ notebookId: notebook.id }} label="בדיקת מצב עיבוד המקורות" variant="secondary" />}
@@ -106,33 +106,33 @@ export default async function StudioTarget({ params }: { params: Promise<{ type:
 
       <Card>
         <h3 className="font-extrabold">3. העלאת הסרטון שהופק</h3>
-        <p className="mt-1 text-sm text-slate-600">MP4 או WebM, עד 2GB. המערכת בודקת סוג, מבנה, משך ורזולוציה, ומעבירה את הגרסה לאישור.</p>
+        <p className="mt-1 text-sm text-muted">MP4 או WebM, עד 2GB. המערכת בודקת סוג, מבנה, משך ורזולוציה, ומעבירה את הגרסה לאישור.</p>
         <div className="mt-3"><StudioUploader targetType={type} targetId={id} packageId={pkg?.id ?? null} /></div>
       </Card>
 
       <Card>
         <h3 className="font-extrabold">4. גרסאות, בדיקה ופרסום</h3>
-        {versions.length === 0 && <p className="mt-2 text-sm text-slate-500">עדיין לא הועלו גרסאות.</p>}
+        {versions.length === 0 && <p className="mt-2 text-sm text-muted">עדיין לא הועלו גרסאות.</p>}
         <div className="mt-3 space-y-4">
           {versions.map((v) => {
             const checks = parseJson<{ file?: VideoFileChecks; review?: { checklist: Record<string, boolean>; at: string } }>(v.checks_json, {});
             const stats = viewsById.get(v.id);
             return (
-              <div key={v.id} className="rounded-xl border border-slate-200 p-3">
+              <div key={v.id} className="rounded-xl border border-line p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-extrabold">גרסה {v.version}</span>
                     <Badge tone={v.status === "published" ? "green" : v.status === "review" ? "amber" : v.status === "rejected" ? "red" : v.status === "approved" ? "blue" : "slate"}>{v.status}</Badge>
-                    <span className="text-xs text-slate-500">{v.title} · {(v.size_bytes / 1024 / 1024).toFixed(1)}MB{v.duration_seconds ? ` · ${v.duration_seconds} שנ׳` : ""}{v.width ? ` · ${v.width}×${v.height}` : ""}</span>
+                    <span className="text-xs text-muted">{v.title} · {(v.size_bytes / 1024 / 1024).toFixed(1)}MB{v.duration_seconds ? ` · ${v.duration_seconds} שנ׳` : ""}{v.width ? ` · ${v.width}×${v.height}` : ""}</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {isAdmin && v.status === "approved" && <ActionButton action="video.publish" payload={{ assetId: v.id }} label="פרסום" variant="primary" confirm="לפרסם את הגרסה לתלמידים? גרסה מפורסמת קודמת תוחלף." />}
                     {isAdmin && v.status === "published" && <ActionButton action="video.unpublish" payload={{ assetId: v.id }} label="הסרה מפרסום" variant="ghost" confirm="להסיר את הסרטון מהתלמידים?" />}
                   </div>
                 </div>
-                {checks.file && !checks.file.passed && <ul className="mt-2 text-sm text-rose-700">{checks.file.issues.map((i) => <li key={i}>✗ {i}</li>)}</ul>}
-                {v.review_note && <p className="mt-2 text-sm text-slate-600">הערת בודק: {v.review_note}</p>}
-                {stats && <p className="mt-2 text-xs text-slate-500">צפיות: {stats.views} · צופים: {stats.viewers} · ממוצע {Math.round(stats.avg_seconds)} שנ׳ · צפו עד הסוף: {stats.completed}</p>}
+                {checks.file && !checks.file.passed && <ul className="mt-2 text-sm text-danger-ink">{checks.file.issues.map((i) => <li key={i}>✗ {i}</li>)}</ul>}
+                {v.review_note && <p className="mt-2 text-sm text-muted">הערת בודק: {v.review_note}</p>}
+                {stats && <p className="mt-2 text-xs text-muted">צפיות: {stats.views} · צופים: {stats.viewers} · ממוצע {Math.round(stats.avg_seconds)} שנ׳ · צפו עד הסוף: {stats.completed}</p>}
                 {["review", "approved", "published"].includes(v.status) && (
                   <video className="mt-3 aspect-video w-full max-w-xl rounded-lg bg-black" controls preload="metadata" src={`/api/academy/media/${v.id}`} />
                 )}

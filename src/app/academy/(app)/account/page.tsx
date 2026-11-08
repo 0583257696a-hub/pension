@@ -4,7 +4,7 @@ import { getDb } from "@/academy/db";
 import { getPaymentProvider } from "@/academy/billing/payment-provider";
 import { LearningService } from "@/academy/services/learning";
 import BillingActions from "@/components/academy/BillingActions";
-import { Card, PageTitle } from "@/components/academy/ui";
+import { Card, CardTitle, PageTitle } from "@/components/academy/ui";
 
 const STATUS: Record<string, string> = { trial: "תקופת ניסיון", active: "פעיל", canceled: "בוטל (פעיל עד סוף התקופה)", expired: "הסתיים" };
 
@@ -17,21 +17,31 @@ export default async function AccountPage() {
   const sub = entitlement.subscription;
   const provider = getPaymentProvider(getConfig().payments.provider);
   const end = sub ? (sub.status === "trial" ? sub.trial_ends_at : sub.current_period_end) : null;
+  const rows: Array<[string, React.ReactNode]> = [
+    ["שם", user.full_name || "—"],
+    ["אימייל", <span key="e" className="ltr">{user.email}</span>],
+    ["סטטוס", entitlement.reason === "staff" ? "צוות" : sub ? STATUS[sub.status] : "חשבון חינמי"],
+    ["בתוקף עד", end ? new Date(end).toLocaleDateString("he-IL") : "—"],
+    ["מחיר מנוי", `${course.price_ils} ₪ לחודש`],
+    ["תקופת ניסיון", `${course.trial_days} ימים`],
+  ];
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
-      <PageTitle title="המנוי שלי" subtitle={course.title} />
+    <div className="mx-auto flex max-w-[760px] flex-col gap-6">
+      <PageTitle title="החשבון שלי" subtitle={course.title} />
       <Card>
-        <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
-          <div><dt className="text-slate-500">שם</dt><dd className="font-semibold">{user.full_name}</dd></div>
-          <div><dt className="text-slate-500">אימייל</dt><dd className="ltr text-start font-semibold">{user.email}</dd></div>
-          <div><dt className="text-slate-500">סטטוס</dt><dd className="font-semibold">{entitlement.reason === "staff" ? "צוות" : sub ? STATUS[sub.status] : "חשבון חינמי"}</dd></div>
-          <div><dt className="text-slate-500">בתוקף עד</dt><dd className="font-semibold">{end ? new Date(end).toLocaleDateString("he-IL") : "-"}</dd></div>
-          <div><dt className="text-slate-500">מחיר מנוי</dt><dd className="font-semibold">{course.price_ils} ₪ לחודש</dd></div>
-          <div><dt className="text-slate-500">תקופת ניסיון</dt><dd className="font-semibold">{course.trial_days} ימים</dd></div>
+        <CardTitle>פרטי המנוי</CardTitle>
+        <dl className="divide-y divide-line-soft border-t border-line-soft text-[15px]">
+          {rows.map(([k, v]) => (
+            <div key={k} className="flex items-center justify-between gap-4 py-3">
+              <dt className="text-muted">{k}</dt>
+              <dd className="font-semibold text-ink">{v}</dd>
+            </div>
+          ))}
         </dl>
       </Card>
       {entitlement.reason !== "staff" && (
         <Card>
+          <CardTitle>ניהול המנוי</CardTitle>
           <BillingActions
             canStartTrial={!sub}
             canCancel={!!sub && (sub.status === "active" || sub.status === "trial") && entitlement.hasAccess}

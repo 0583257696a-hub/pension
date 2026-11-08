@@ -27,11 +27,11 @@ export default function Md({ text, className = "" }: { text: string; className?:
       const content = line.replace(/^#+\s/, "");
       blocks.push(
         level === 1 ? (
-          <h2 key={i} className="mt-4 text-xl font-bold text-slate-900">{inline(content)}</h2>
+          <h2 key={i} className="mt-4 text-xl font-bold text-ink">{inline(content)}</h2>
         ) : level === 2 ? (
-          <h3 key={i} className="mt-4 text-lg font-bold text-slate-900">{inline(content)}</h3>
+          <h3 key={i} className="mt-4 text-lg font-bold text-ink">{inline(content)}</h3>
         ) : (
-          <h4 key={i} className="mt-3 font-semibold text-slate-900">{inline(content)}</h4>
+          <h4 key={i} className="mt-3 font-semibold text-ink">{inline(content)}</h4>
         ),
       );
       i++;
@@ -68,7 +68,7 @@ export default function Md({ text, className = "" }: { text: string; className?:
       blocks.push(
         <div key={`t${i}`} className="my-3 overflow-x-auto">
           <table className="md-table text-sm">
-            <thead><tr>{head?.map((c, k) => <th key={k} className="bg-slate-50">{inline(c)}</th>)}</tr></thead>
+            <thead><tr>{head?.map((c, k) => <th key={k} className="bg-surface">{inline(c)}</th>)}</tr></thead>
             <tbody>{body.map((r, k) => <tr key={k}>{r.map((c, j) => <td key={j}>{inline(c)}</td>)}</tr>)}</tbody>
           </table>
         </div>,
@@ -79,5 +79,5 @@ export default function Md({ text, className = "" }: { text: string; className?:
     while (i < lines.length && lines[i].trim() && !/^(#|\s*[-*] |\s*\d+\. |\s*\|)/.test(lines[i])) para.push(lines[i++]);
     blocks.push(<p key={`p${i}`} className="my-2 leading-7">{inline(para.join(" "))}</p>);
   }
-  return <div className={`text-slate-700 ${className}`}>{blocks}</div>;
+  return <div className={`text-body ${className}`}>{blocks}</div>;
 }
