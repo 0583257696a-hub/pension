@@ -41,6 +41,73 @@ From photographed pages of the course book (CASIO FC-100V/200V appendix) and the
 
 These would move several registry facts (`cmpd.entry`, `cmpd.rows`, `solve.key`, `input.neg`, `cmpd.convention`) from "secondary source" to "course book", and add a reset fact. A reviewer still confirms them on the physical calculator.
 
+## Finance summary notes (מימון.pdf, 22 handwritten pages): what they add
+
+**Lesson order in the notes**, a useful guide for re-mapping finance chapters 1–6. The numbers are the notes' own:
+1. Time value of money: FV/PV and compounding/discounting.
+2. Interest types:
+   - simple vs compound;
+   - nominal vs effective, and converting between periods (effective rates are never divided or multiplied);
+   - prepaid interest;
+   - fees, paid or added.
+3. Fixed series in CMPD: FV and PV of an annuity, End vs Begin.
+4. Applications: valuing a subsidised-rate benefit (discount at the market rate, not the benefit rate), cash vs instalments with the implied rate, and an overdraft line with a combined effective rate.
+5. Variable series in CASH, plus perpetuities (constant `PMT/r`, growing `PMT/(r−g)`; PV lands one period before the first payment).
+6. Loans and amortisation:
+   - balloon, equal principal ("רגיל") and Spitzer (equal payments);
+   - grace periods;
+   - golden rules of the schedule;
+   - AMRT;
+   - early repayment and changing terms via BAL.
+7. Bonds:
+   - face value, maturity, coupon;
+   - price via CMPD;
+   - YTM;
+   - premium/discount/par;
+   - sinking bonds via CASH;
+   - consols;
+   - zero-coupon / מק"מ;
+   - realised investor return.
+8. Inflation and indexation: `1+R(n) = (1+R(r))(1+π)`, and when the rate is real vs nominal (indexed plan → real).
+9. Project evaluation:
+   - NPV, IRR (only for conventional projects), PI, EAC/EAV (via formula or CMPD);
+   - independent vs mutually exclusive projects;
+   - NPV profile and crossover rate (IRR of the difference flows).
+
+**Calculator facts it adds.** These are secondary sources (student notes plus quoted book pages), still to confirm on the device:
+- AMRT rows are `PM1`, `PM2`, `BAL`, `INT`, `PRN`, `ΣINT`, `ΣPRN`.
+  - AMRT reads the CMPD values, so PMT is solved in CMPD first.
+  - This supports adding an `amrt.*` fact group and builder; neither exists yet.
+- CASH screen: `I%` = cost of capital, the cash-flow editor, then `NPV`, `IRR`, `NFV`.
+  - Editor row 1 is time 0.
+  - Periods must be equally spaced.
+  - NFV is stated at the time of the last row.
+  - This matches `cash.screen` / `cash.editor`.
+- Placement rules for annuities:
+  - CMPD End, FV → at the last PMT.
+  - Begin, FV → one period after the last PMT.
+  - End, PV → one period before the first PMT.
+  - Begin, PV → at the first PMT.
+- EAV through CMPD: End, `n` = project life, `I%` = cost of capital, `PV` = NPV, solve `PMT`.
+- Reset: `SHIFT` `9` → `All` → `EXE`. This agrees with the book's reset already listed above.
+- Every CMPD example uses **I% per payment period** with n = number of payments (e.g. n=12, I%=1; n=24, I%=0.5). This confirms conflict #11 (P/Y = C/Y = 1).
+
+**Independent recomputation of the notes' worked numbers.** The notes are not error-free, which shows why every number goes through the math engine (§10, §11):
+
+| Example | Notes | Recomputed |
+|---|---|---|
+| FV annuity 100 × 12, 1%, End / Begin | 1,268.25 / 1,280.93 (an earlier line shows 1,280.68) | 1,268.25 / 1,280.93; **1,280.68 is wrong** |
+| PV annuity 200 × 24, 0.5%, End / Begin | 4,512.57 / 4,535.13 | 4,512.57 / 4,535.14 (rounding) |
+| Benefit 400,000 for 11 y, 2% vs 4.2%, PV of gap at 2% | 131,584 → 105,828 | 131,584 → 105,828 ✓ |
+| Implied rate, 3,500 cash vs 24 × 160 | 0.755% | 0.755% ✓ |
+| Overdraft combined effective rate | 7.71% | 7.71% ✓ |
+| Growing flows 6,500 (+4%) × 4, 7% — NPV / NFV | 23,296 / 30,546 | 23,296 / **30,536** |
+| Bond 3 y, coupon 5, face 100, YTM 8% / price 102 → YTM | 92.26 / 4.27% | 92.27 / 4.28% (truncation vs rounding) |
+| Sinking bond flows 8, 8, 58, 54 at 5.6% / price 97.2 → IRR | 107.4 / 8.96% | 107.43 / 8.97% |
+| Perpetuity 200 at 5%, first payment in a year / today | 4,000 / 4,200 | 4,000 / 4,200 ✓ |
+
+Rounding rule to decide: whether published answers show the calculator display rounded to 2 decimals (the engine's current behaviour) or truncated. Several of the notes' values look truncated.
+
 ## Exam facts stated in the course book (for simulations; verify against the official exam rules)
 
 20 multiple-choice questions; pass mark 60 (12 correct); 2.5 hours; no scratch paper; allowed: financial calculator and the uniform formula sheet handed out at the exam; held by the Israel Securities Authority, usually twice a year. The current timed simulation (13 questions, 30 minutes, pass 70) does not match these.
