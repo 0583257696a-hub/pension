@@ -1,6 +1,6 @@
 # Gap analysis: current build vs. Knowledge Base v1.0 (10.11.2026)
 
-Source of truth: `docs/knowledge/Pension_AI_Academy_Knowledge_v1.md`. That document is accumulated context, **not a final spec and not approval for development**. Where it conflicts with earlier development prompts, the later explicit requirements of the product owner win. Nothing below has been implemented yet; this file lists what would change.
+Source of truth: `docs/knowledge/Pension_AI_Academy_Knowledge_v1.md`. That document is accumulated context, **not a final spec and not approval for development**. Where it conflicts with earlier development prompts, the later explicit requirements of the product owner win. Status update (master spec, phase 1): conflicts 1, 2, 3 (video shown when available, publish not blocked), 4, 5, 6, 7, 8 (access only via verified payment / coupon / admin; Lesson 1 can be a free preview by admin setting), 9 and 11 are implemented; 10 and 12 are open. See `docs/phase-1-report.md`.
 
 ## Conflicts with the current build (remove or change)
 

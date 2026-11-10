@@ -1,40 +1,29 @@
 import { requireApiUser } from "@/academy/auth/session";
-import { EntitlementService } from "@/academy/billing/entitlements";
-import { getPaymentProvider } from "@/academy/billing/payment-provider";
+import { BillingService } from "@/academy/billing/service";
 import { getConfig } from "@/academy/config";
 import { getDb } from "@/academy/db";
 import { assertSameOrigin, errorResponse, json, readJson } from "@/academy/http";
-import { LearningService } from "@/academy/services/learning";
 
-/** Student billing actions: start the free trial, open checkout, cancel renewal. */
+/** Student billing: price quote (with coupon), checkout on the provider's hosted page, cancel renewal. */
 export async function POST(request: Request) {
   try {
     assertSameOrigin(request);
     const user = await requireApiUser();
-    const body = await readJson<{ action?: "trial" | "checkout" | "cancel" }>(request);
-    const db = await getDb();
-    const course = await new LearningService(db).getCourse();
-    if (!course) return json({ error: "הקורס לא נמצא" }, 404);
-    const entitlements = new EntitlementService(db);
+    const body = await readJson<{ action?: "quote" | "checkout" | "cancel"; planId?: string; coupon?: string; subscriptionId?: string }>(request);
+    const config = getConfig();
+    const billing = new BillingService(await getDb(), config.payments.provider);
     switch (body.action) {
-      case "trial": {
-        const sub = await entitlements.startTrial(user.id, course.id, course.trial_days);
-        return json({ ok: true, subscription: sub });
+      case "quote": {
+        const q = await billing.quote(String(body.planId ?? ""), body.coupon ?? null);
+        return json({ ok: true, listPrice: q.listPrice, discount: q.discount, amount: q.amount, coupon: q.coupon?.code ?? null });
       }
       case "checkout": {
-        const provider = getPaymentProvider(getConfig().payments.provider);
-        const { redirectUrl } = await provider.createCheckout({
-          userId: user.id, email: user.email, fullName: user.full_name, courseId: course.id, courseTitle: course.title, priceIls: course.price_ils,
-          successUrl: `${getConfig().appUrl}/academy/account?paid=1`, cancelUrl: `${getConfig().appUrl}/academy/account`,
-        });
-        return json({ ok: true, redirectUrl });
+        const result = await billing.checkout(user, String(body.planId ?? ""), body.coupon ?? null, { appUrl: config.appUrl });
+        return json({ ok: true, ...result });
       }
-      case "cancel": {
-        const sub = await entitlements.latestSubscription(user.id, course.id);
-        if (!sub || sub.user_id !== user.id) return json({ error: "אין מנוי פעיל" }, 404);
-        await entitlements.cancel(sub.id, user.id);
+      case "cancel":
+        await billing.cancelSubscription(user, String(body.subscriptionId ?? ""));
         return json({ ok: true });
-      }
       default:
         return json({ error: "פעולה לא מוכרת" }, 400);
     }

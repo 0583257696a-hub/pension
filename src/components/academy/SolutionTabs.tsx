@@ -4,22 +4,22 @@ import { useState } from "react";
 import type { SolutionPresentation } from "@/academy/services/types";
 import CalculatorWalkthrough from "./CalculatorWalkthrough";
 import Md from "./Md";
-import TutorChat from "./TutorChat";
 import VideoPlayer from "./VideoPlayer";
 
-type Tab = "calculator" | "formula" | "video" | "tutor";
+type Tab = "calculator" | "formula" | "video";
 
 /**
  * One verified solution record, several presentations (design 04).
  * The calculator tab opens by default whenever a verified calculator solution exists;
- * tabs without content (no verified sequence, no approved video) are not shown.
+ * the calculator tab appears only for a fully verified sequence. The video tab
+ * is always listed and says so plainly when the approved video is not ready.
+ * There is no AI chat here: help goes through the human "צריכים עזרה?" form.
  */
-export default function SolutionTabs({ solution, lessonId, initialTab }: { solution: SolutionPresentation; lessonId: string; initialTab?: Tab }) {
+export default function SolutionTabs({ solution, initialTab }: { solution: SolutionPresentation; initialTab?: Tab }) {
   const tabs: Array<{ id: Tab; label: string }> = [
     ...(solution.calculator ? [{ id: "calculator" as const, label: "פתרון במחשבון פיננסי" }] : []),
     { id: "formula", label: solution.isCalculation ? "פתרון באמצעות נוסחה" : "פתרון מלא" },
-    ...(solution.video ? [{ id: "video" as const, label: "סרטון הסבר" }] : []),
-    { id: "tutor", label: "שאל את המורה AI" },
+    { id: "video" as const, label: "סרטון הסבר" },
   ];
   const fallback: Tab = solution.calculator ? "calculator" : "formula";
   const [tab, setTab] = useState<Tab>(initialTab && tabs.some((t) => t.id === initialTab) ? initialTab : fallback);
@@ -62,8 +62,12 @@ export default function SolutionTabs({ solution, lessonId, initialTab }: { solut
             </ol>
           </div>
         )}
-        {tab === "video" && solution.video && <VideoPlayer assetId={solution.video.id} url={solution.video.url} title={solution.video.title} />}
-        {tab === "tutor" && <TutorChat lessonId={lessonId} questionId={solution.questionId} compact />}
+        {tab === "video" &&
+          (solution.video ? (
+            <VideoPlayer assetId={solution.video.id} url={solution.video.url} title={solution.video.title} />
+          ) : (
+            <p className="rounded-md bg-surface px-4 py-6 text-center text-[15px] text-muted">סרטון הפתרון לשאלה זו בהכנה ויתווסף לאחר בדיקה מקצועית.</p>
+          ))}
       </div>
     </section>
   );

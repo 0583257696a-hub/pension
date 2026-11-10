@@ -7,7 +7,7 @@ describe("database layer", () => {
   it("migrates an in-memory sqlite database idempotently", async () => {
     const db = new NodeSqliteDb(":memory:");
     const first = await migrate(db);
-    expect(first).toEqual(["0001_init"]);
+    expect(first).toEqual(["0001_init", "0002_academy_structure"]);
     const second = await migrate(db);
     expect(second).toEqual([]);
     const tables = await db.all<{ name: string }>("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name");

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import { IconCalendar, IconCheckSquare, IconGrid, IconSettings, IconTimer, IconUser } from "../icons";
+import { IconCalendar, IconCheckSquare, IconGrid, IconHelp, IconSettings, IconTimer, IconUser } from "../icons";
 
 interface Item {
   href: string;
@@ -12,13 +12,14 @@ interface Item {
   match?: string[];
 }
 
-/** Student navigation (design 02/04). Only areas that exist in the product. */
+/** Student navigation (spec §29). Only areas that exist in the product; no AI chat. */
 export function studentNav(isStaff: boolean): Item[] {
   return [
-    { href: "/academy/dashboard", label: "לוח הבקרה", icon: <IconGrid /> },
-    { href: "/academy/course", label: "תוכנית הלימודים", icon: <IconCalendar />, match: ["/academy/course"] },
-    { href: "/academy/practice", label: "תרגול שאלות", icon: <IconCheckSquare />, match: ["/academy/practice"] },
-    { href: "/academy/exams", label: "מבחנים וסימולציות", icon: <IconTimer />, match: ["/academy/exams", "/academy/quiz"] },
+    { href: "/academy/dashboard", label: "הקורסים שלי", icon: <IconGrid /> },
+    { href: "/academy/course", label: "שיעורים", icon: <IconCalendar />, match: ["/academy/course"] },
+    { href: "/academy/assignments", label: "מטלות", icon: <IconCheckSquare />, match: ["/academy/assignments", "/academy/attempts"] },
+    { href: "/academy/grades", label: "ציונים", icon: <IconTimer />, match: ["/academy/grades"] },
+    { href: "/academy/help", label: "הפניות שלי", icon: <IconHelp />, match: ["/academy/help"] },
     { href: "/academy/account", label: "החשבון שלי", icon: <IconUser /> },
     ...(isStaff ? [{ href: "/academy/admin", label: "ניהול הקורס", icon: <IconSettings /> }] : []),
   ];

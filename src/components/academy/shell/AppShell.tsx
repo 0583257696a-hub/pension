@@ -13,15 +13,11 @@ export function planBadge(entitlement: Entitlement | null): { text: string; tone
     case "staff":
       return { text: "גישת צוות", tone: "blue" };
     case "active":
-      return { text: "מנוי פעיל", tone: "green" };
-    case "trial":
-      return { text: "תקופת ניסיון", tone: "green" };
-    case "canceled_until_period_end":
-      return { text: "המנוי בוטל", tone: "amber" };
+      return { text: "גישה פעילה", tone: "green" };
     case "expired":
-      return { text: "המנוי הסתיים", tone: "amber" };
+      return { text: "הגישה הסתיימה", tone: "amber" };
     default:
-      return { text: "חשבון חינמי", tone: "slate" };
+      return { text: "שיעור לדוגמה בלבד", tone: "slate" };
   }
 }
 

@@ -2,21 +2,26 @@
 
 A single commercial course (Finance & Statistics for Israeli pension-advisor licensing), built end to end as a standalone Next.js app (served under `/academy`; `/` redirects there). Student-facing content is Hebrew; code and documentation are English.
 
-Unit 1 (time value of money) is fully built and verified. Units 2–6 are draft outlines that use the same components; combinatorics is part of **Unit 5 — Statistics & Probability (part B)**, not a separate module.
+Product direction: `docs/knowledge/Pension_AI_Academy_Master_Development_Prompt.md` (master spec) and `docs/knowledge/Pension_AI_Academy_Knowledge_v1.md`. The student side is a structured academy: numbered lessons, lesson PDFs above the video, a fixed 20-question assignment per lesson, approved solutions and short solution videos, grades, and a human "צריכים עזרה?" help form. **There is no student-facing AI**; Claude is used only in the admin content factory.
+
+The course has 14 chapters in three parts (finance 1–6, statistics 7–11 with combinatorics as chapter 7, investments 12–14), taught in 16 numbered lessons. **Lesson 1** is the first complete vertical slice (6 lesson questions, 20 assignment questions, PDFs). Lessons 2–16 are drafts. Phase status: `docs/phase-1-report.md`.
 
 ## Quick start (local)
 
 ```bash
 npm install
 npm run dev            # http://localhost:3000/academy
-npm test               # 72 tests (math, calculator, content, auth, billing, journey, AI, integrations)
+npm test               # 99 tests, incl. the spec §35 acceptance test for Lesson 1
 ```
 
 First run creates `.data/academy.sqlite` and imports the course **in review status** — nothing is visible to students yet. The first account you register becomes admin. Then:
 
-1. `/academy/admin/calculator` — confirm the CASIO FC-200V facts against the official User's Guide or the device (see *Calculator-first* below).
-2. `/academy/admin/content` — open each lesson, read the automatic verification report, approve questions, publish the lesson.
-3. Register a second account to experience the student side.
+1. `/academy/admin/calculator` — confirm the CASIO FC-200V facts against the official User's Guide or the device (see *Calculator-first* below). Until then solutions show the verified formula method only.
+2. `/academy/admin/content` — open Lesson 1, read the automatic verification report, approve the 20 questions, publish the lesson.
+3. `/academy/admin/assignments` — publish Assignment 1 (pre-publication checks must all pass; publishing freezes question versions).
+4. `/academy/admin/materials` — generate the lesson PDFs, review them, publish. Set video chapter and checkpoint times after the lesson video is uploaded.
+5. `/academy/admin/users` — grant access (with a reference) or sell through `/academy/pricing` once a payment provider is configured.
+6. Register a second account to experience the student side.
 
 ## Architecture
 
@@ -24,13 +29,16 @@ First run creates `.data/academy.sqlite` and imports the course **in review stat
 |---|---|---|
 | Data | `src/academy/db` | `SqlDb` interface in the SQLite dialect. Drivers: `node:sqlite` (dev/tests), Cloudflare **D1 via REST** (`d1-http`, works on Netlify/Node), D1 **binding** (when deployed on Cloudflare). Migrations in `db/migrations`, applied automatically; `npm run academy:d1-sql` exports them for `wrangler d1 migrations apply`. |
 | Auth | `src/academy/auth` | PBKDF2-SHA256 passwords, opaque session tokens (only SHA-256 hashes stored), httpOnly SameSite=Lax cookie, same-origin check on writes. Roles: student / reviewer / admin. |
-| Entitlements | `src/academy/billing/entitlements.ts` | All access decisions are server-side (`decideLessonAccess`). Free lessons, one trial per user, paid subscription, cancel-at-period-end, expiry, admin revoke. |
-| Payments | `src/academy/billing/payment-provider.ts` | **No simulated payments.** Provider `none` until a verified PSP is integrated (hosted payment page + signed webhooks → `/api/academy/billing/webhook/[provider]`). Meanwhile admins record paid periods manually with a payment reference (audited). |
+| Entitlements | `src/academy/billing/entitlements.ts` | The `entitlements` table is the only source of access. Created by a verified webhook, a 100% coupon, or an admin (with a reference). Server-side decisions (`decideLessonAccess`); "free" lessons are previews for signed-in users. |
+| Payments | `src/academy/billing/service.ts`, `payment-provider.ts` | Plans (one-time / monthly / annual), coupons, orders, `payment_events` (each provider event applied once), amount check, refunds revoke access, reconciliation for lost webhooks and expired subscriptions. **No simulated payments**: provider `none` until a verified Israeli PSP is implemented. |
+| Assignments | `src/academy/services/assignments.ts` | One fixed assignment per lesson (default 20). Publishing freezes approved question versions (`question_versions`); attempts pin them, so later edits never change old grades. Autosave per answer, resume position, solution policy, first submission = official grade, practice attempts after. |
+| Help requests | `src/academy/services/help.ts` | "צריכים עזרה?" with server-attached context (course, lesson, assignment, question + version, attempt, chosen answer); admin inbox "פניות תלמידים", statuses, replies; no AI answers. |
+| PDFs | `src/academy/pdf`, `services/materials.ts` | Pure-JS engine (pdf-lib + fontkit + bidi-js, runs on Workers): embedded Heebo + DejaVu math subset, UAX #9 bidi, LTR formula blocks, page numbers, deterministic output. Lesson questions, formula sheet, summary, homework booklet; versioned, published by a reviewer, served only to entitled users. |
 | Math engine | `src/academy/math` | Independent finance/statistics formulas + a safe expression evaluator (whitelisted functions, no `eval`). |
 | Calculator | `src/academy/calculator` | FC-200V model (keys + facts), plan→key-sequence builders, deterministic simulator, verdicts. |
 | Content | `src/academy/content` | Course definition (Unit 1 + outlines), verification, idempotent import that never deletes rows. |
-| Services | `src/academy/services` | Learning (lessons, answers, quizzes, progress), content review gates, Video Studio, calculator facts. |
-| AI | `src/academy/ai` | Claude client (Opus 5.5 by default, server-side refusal fallbacks), calculator-first tutor with deterministic tools, content engine. |
+| Services | `src/academy/services` | Learning (numbered lessons, lesson page, progress), content review gates, Video Studio, calculator facts. |
+| AI | `src/academy/ai` | Admin-only: Claude client (Opus 5.5 by default, server-side refusal fallbacks) and the content engine. The former student tutor was removed (spec §13); its stored threads are kept. |
 | NotebookLM | `src/academy/notebook` | `NotebookProvider` (official v1alpha endpoints only), `VideoProvider` (manual today), production packages. |
 | Storage | `src/academy/storage` | Local disk or Cloudflare R2 (SigV4 presigned URLs, no SDK); automatic video file checks. |
 | UI | `src/app/academy`, `src/components/academy` | Design system "Pension AI Academy 1.0" (tokens in `src/app/academy/academy.css`, Heebo self-hosted under `public/fonts`, OFL). Route groups by frame: `(site)` public pages, `(app)` student app shell, `(player)` lesson player, `admin` dark admin shell. Calculator walkthrough with highlighted FC-200V keys driven by the simulator trace. Deterministic calculator render at `/render/calculator/[questionId]`. |
@@ -80,7 +88,8 @@ There is no documented API for creating or downloading Video Overviews, so produ
 ## Safety rails
 
 - Nothing generated or imported is shown to students before a reviewer approves it; publishing a lesson (paid content) is admin-only and asks for confirmation.
-- Re-importing content never deletes rows; changed items return to review; student attempts, quiz results and progress are keyed by stable ids and survive reorganisation.
+- Re-importing content never deletes rows; changed items return to review; student attempts, grades and progress are keyed by stable ids and survive reorganisation. Published assignments pin question versions.
+- Policy pages (terms, privacy, accessibility) are drafts marked for legal review; they are not a compliance claim.
 - No production deployment, deletion of external resources or exposure of paid content happens automatically.
 
 ## Environment

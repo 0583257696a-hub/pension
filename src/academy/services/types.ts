@@ -9,7 +9,7 @@ export interface UnitRow { id: string; course_id: string; position: number; slug
 export interface LessonRow {
   id: string; unit_id: string; position: number; slug: string; title: string; description: string; summary_md: string;
   formulas_json: string; examples_json: string; objectives_json: string; access: "free" | "paid";
-  status: "draft" | "review" | "published"; estimated_minutes: number; video_asset_id: string | null;
+  status: "draft" | "review" | "published"; estimated_minutes: number; video_asset_id: string | null; updated_at: string;
 }
 export interface QuestionRow {
   id: string; lesson_id: string; position: number; difficulty: number; stem_md: string; options_json: string; correct_key: string;

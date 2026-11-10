@@ -7,7 +7,7 @@
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 
-const files = ["0001_init"];
+const files = ["0001_init", "0002_academy_structure"];
 mkdirSync("migrations/d1", { recursive: true });
 for (const name of files) {
   const mod = await import(`../src/academy/db/migrations/${name}.ts`);

@@ -5,10 +5,11 @@ import { useState } from "react";
 import { LogoMark } from "../icons";
 
 const LINKS = [
-  { href: "/academy#how", label: "איך זה עובד" },
-  { href: "/academy#course", label: "מסלולי לימוד" },
-  { href: "/academy#pricing", label: "מחירים" },
-  { href: "/academy#faq", label: "שאלות נפוצות" },
+  { href: "/academy/courses", label: "קורסים" },
+  { href: "/academy#how", label: "איך לומדים" },
+  { href: "/academy/pricing", label: "מחירים" },
+  { href: "/academy/faq", label: "שאלות נפוצות" },
+  { href: "/academy/contact", label: "צור קשר" },
 ];
 
 /** Public site header (design 01). */
@@ -31,7 +32,7 @@ export default function MarketingHeader({ signedIn }: { signedIn: boolean }) {
         <div className="mr-auto hidden items-center gap-2 lg:flex">
           {signedIn ? (
             <Link href="/academy/dashboard" className="inline-flex h-10 items-center rounded-md bg-dark px-4 text-sm font-semibold text-white hover:bg-black">
-              ללוח הבקרה
+              לקורסים שלי
             </Link>
           ) : (
             <>
@@ -39,7 +40,7 @@ export default function MarketingHeader({ signedIn }: { signedIn: boolean }) {
                 התחברות
               </Link>
               <Link href="/academy/register" className="inline-flex h-10 items-center rounded-md bg-dark px-4 text-sm font-semibold text-white hover:bg-black">
-                מתחילים ללמוד
+                הרשמה
               </Link>
             </>
           )}
@@ -57,11 +58,11 @@ export default function MarketingHeader({ signedIn }: { signedIn: boolean }) {
           ))}
           <div className="mt-2 flex gap-2 border-t border-line-soft pt-3">
             {signedIn ? (
-              <Link href="/academy/dashboard" className="inline-flex h-10 flex-1 items-center justify-center rounded-md bg-dark text-sm font-semibold text-white">ללוח הבקרה</Link>
+              <Link href="/academy/dashboard" className="inline-flex h-10 flex-1 items-center justify-center rounded-md bg-dark text-sm font-semibold text-white">לקורסים שלי</Link>
             ) : (
               <>
                 <Link href="/academy/login" className="inline-flex h-10 flex-1 items-center justify-center rounded-md border border-input text-sm font-semibold">התחברות</Link>
-                <Link href="/academy/register" className="inline-flex h-10 flex-1 items-center justify-center rounded-md bg-dark text-sm font-semibold text-white">מתחילים ללמוד</Link>
+                <Link href="/academy/register" className="inline-flex h-10 flex-1 items-center justify-center rounded-md bg-dark text-sm font-semibold text-white">הרשמה</Link>
               </>
             )}
           </div>

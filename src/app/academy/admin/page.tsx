@@ -44,8 +44,12 @@ export default async function AdminOverview() {
   const pendingFacts = facts.filter((f) => f.status !== "confirmed").length;
 
   const n = async (sql: string, params: string[] = []) => Number((await db.get<{ n: number }>(sql, params))?.n ?? 0);
-  const activeSubs = await n("SELECT COUNT(*) AS n FROM subscriptions WHERE status IN ('trial','active') OR (status = 'canceled' AND current_period_end > strftime('%Y-%m-%dT%H:%M:%fZ','now'))");
-  const newSubs = await n("SELECT COUNT(*) AS n FROM subscriptions WHERE created_at >= ?", [isoDaysAgo(30)]);
+  const nowIso = new Date().toISOString();
+  const activeAccess = await n("SELECT COUNT(DISTINCT user_id) AS n FROM entitlements WHERE status = 'active' AND (expires_at IS NULL OR expires_at > ?)", [nowIso]);
+  const activeSubscriptions = await n("SELECT COUNT(*) AS n FROM subscriptions WHERE status = 'active' AND current_period_end > ?", [nowIso]);
+  const sales30 = await n("SELECT COALESCE(SUM(amount_agorot),0) AS n FROM orders WHERE status = 'paid' AND paid_at >= ?", [isoDaysAgo(30)]);
+  const submissions30 = await n("SELECT COUNT(*) AS n FROM assignment_attempts WHERE kind = 'official' AND status = 'submitted' AND submitted_at >= ?", [isoDaysAgo(30)]);
+  const openHelp = await n("SELECT COUNT(*) AS n FROM help_requests WHERE status IN ('new','in_progress')");
   const students = await n("SELECT COUNT(*) AS n FROM users WHERE role = 'student'");
   const newStudents = await n("SELECT COUNT(*) AS n FROM users WHERE role = 'student' AND created_at >= ?", [isoDaysAgo(30)]);
   const publishedLessons = await n("SELECT COUNT(*) AS n FROM lessons WHERE status = 'published'");
@@ -75,14 +79,16 @@ export default async function AdminOverview() {
   const withPackage = await n("SELECT COUNT(DISTINCT target_type || ':' || target_id) AS n FROM production_packages");
   const withVideo = await n("SELECT COUNT(DISTINCT target_type || ':' || target_id) AS n FROM video_assets WHERE status = 'published'");
   const videosInReview = await db.all<{ id: string; target_type: string; target_id: string; created_at: string }>("SELECT id, target_type, target_id, created_at FROM video_assets WHERE status = 'review' ORDER BY created_at LIMIT 3");
-  const subs = await db.all<{ full_name: string; email: string; status: string; provider: string; created_at: string }>(
-    "SELECT u.full_name, u.email, s.status, s.provider, s.created_at FROM subscriptions s JOIN users u ON u.id = s.user_id ORDER BY s.created_at DESC LIMIT 5",
+  const subs = await db.all<{ full_name: string; email: string; source: string; status: string; expires_at: string | null; created_at: string }>(
+    "SELECT u.full_name, u.email, e.source, e.status, e.expires_at, e.created_at FROM entitlements e JOIN users u ON u.id = e.user_id ORDER BY e.created_at DESC LIMIT 5",
   );
   const config = getConfig();
   const notebook = getNotebookProvider();
 
   const tiles: Array<{ label: string; value: number; note: string; tone: "green" | "amber" | "muted"; href: string }> = [
-    { label: "מנויים פעילים", value: activeSubs, note: `+${newSubs} ב-30 הימים האחרונים`, tone: newSubs ? "green" : "muted", href: "/academy/admin/users" },
+    { label: "תלמידים עם גישה פעילה", value: activeAccess, note: `${activeSubscriptions} מנויים מתחדשים · מכירות 30 יום: ${(sales30 / 100).toLocaleString("he-IL")} ₪`, tone: "muted", href: "/academy/admin/billing" },
+    { label: "מטלות שהוגשו (30 יום)", value: submissions30, note: "הגשות רשמיות", tone: "muted", href: "/academy/admin/assignments" },
+    { label: "פניות פתוחות", value: openHelp, note: openHelp ? "ממתינות לתשובה" : "אין פניות פתוחות", tone: openHelp ? "amber" : "green", href: "/academy/admin/support" },
     { label: "תלמידים רשומים", value: students, note: `+${newStudents} ב-30 הימים האחרונים`, tone: newStudents ? "green" : "muted", href: "/academy/admin/users" },
     { label: "שיעורים שפורסמו", value: publishedLessons, note: `${approvedQuestions} שאלות מאושרות`, tone: "muted", href: "/academy/admin/content" },
     { label: "ממתינים לבקרה אקדמית", value: queue.length + videosInReview.length, note: oldestReview?.at ? `הוותיק ביותר: ${daysAgo(oldestReview.at)}` : "אין פריטים בתור", tone: queue.length ? "amber" : "muted", href: "/academy/admin/content" },
@@ -196,7 +202,7 @@ export default async function AdminOverview() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-        <Panel title="מנויים אחרונים" action={<Link href="/academy/admin/users" className="text-sm font-semibold text-accent">לכל המנויים</Link>}>
+        <Panel title="גישות אחרונות" action={<Link href="/academy/admin/users" className="text-sm font-semibold text-accent">לכל התלמידים</Link>}>
           {subs.length ? (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[480px] text-sm">
@@ -207,11 +213,11 @@ export default async function AdminOverview() {
                   {subs.map((s, i) => (
                     <tr key={i}>
                       <td className="px-6 py-3 font-medium">{s.full_name || s.email}</td>
-                      <td className="px-3 py-3 text-muted">{s.provider === "trial" ? "ניסיון" : s.provider === "manual" ? "הפעלה ידנית" : s.provider}</td>
+                      <td className="px-3 py-3 text-muted">{({ purchase: "רכישה", subscription: "מנוי", admin: "הענקה ידנית", coupon: "קופון", legacy: "גישה קודמת" } as Record<string, string>)[s.source] ?? s.source}</td>
                       <td className="ltr px-3 py-3 text-start text-muted">{new Date(s.created_at).toLocaleDateString("he-IL")}</td>
                       <td className="px-6 py-3">
-                        <Badge tone={s.status === "active" ? "green" : s.status === "trial" ? "blue" : s.status === "canceled" ? "amber" : "slate"}>
-                          {s.status === "active" ? "פעיל" : s.status === "trial" ? "ניסיון" : s.status === "canceled" ? "בוטל" : "הסתיים"}
+                        <Badge tone={s.status === "active" && (!s.expires_at || s.expires_at > nowIso) ? "green" : "slate"}>
+                          {s.status === "revoked" ? "בוטלה" : !s.expires_at || s.expires_at > nowIso ? "פעילה" : "הסתיימה"}
                         </Badge>
                       </td>
                     </tr>
@@ -220,7 +226,7 @@ export default async function AdminOverview() {
               </table>
             </div>
           ) : (
-            <p className="px-6 pb-6 text-[15px] text-muted">עדיין אין מנויים.</p>
+            <p className="px-6 pb-6 text-[15px] text-muted">עדיין אין גישות בתשלום.</p>
           )}
         </Panel>
 

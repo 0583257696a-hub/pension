@@ -14,11 +14,15 @@
     "academy:render-calculator": "node scripts/render-calculator-video.mjs",
     "preview": "wrangler dev",
     "deploy": "wrangler deploy",
-    "build:next": "next build"
+    "build:next": "next build",
+    "academy:pdf-fonts": "node scripts/build-pdf-fonts.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.6.0",
+    "@pdf-lib/fontkit": "^1.1.1",
+    "bidi-js": "^1.0.3",
     "next": "^16.4.5",
+    "pdf-lib": "^1.17.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "zod": "^4.6.7"

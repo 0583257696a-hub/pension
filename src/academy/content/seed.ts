@@ -6,6 +6,8 @@ import { buildCalculatorSolution, contentHash, verifyQuestion } from "./verify";
 
 export interface SeedSummary {
   course: string;
+  chapters: number;
+  assignments: number;
   units: number;
   lessons: { inserted: number; updated: number; sentBackToReview: number };
   questions: { inserted: number; updated: number; sentBackToReview: number; verified: number; failed: number };
@@ -24,6 +26,8 @@ export async function seedCourse(db: SqlDb, course: SeedCourse, actorId: string 
   const calculator = getCalculator(course.calculatorModel);
   const summary: SeedSummary = {
     course: course.id,
+    chapters: 0,
+    assignments: 0,
     units: 0,
     lessons: { inserted: 0, updated: 0, sentBackToReview: 0 },
     questions: { inserted: 0, updated: 0, sentBackToReview: 0, verified: 0, failed: 0 },
@@ -38,6 +42,22 @@ export async function seedCourse(db: SqlDb, course: SeedCourse, actorId: string 
        updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')`,
     [course.id, course.slug, course.title, course.subtitle, course.description, course.priceIls, course.trialDays, course.calculatorModel],
   );
+
+  for (const chapter of course.chapters) {
+    await db.run(
+      `INSERT INTO chapters (id, course_id, number, part, title, topics_json) VALUES (?,?,?,?,?,?)
+       ON CONFLICT(id) DO UPDATE SET number=excluded.number, part=excluded.part, title=excluded.title, topics_json=excluded.topics_json`,
+      [chapter.id, course.id, chapter.number, chapter.part, chapter.title, JSON.stringify(chapter.topics)],
+    );
+    summary.chapters++;
+  }
+  // Plans are created once; prices and availability are then managed in the admin panel.
+  for (const [index, plan] of course.plans.entries()) {
+    await db.run(
+      "INSERT OR IGNORE INTO plans (id, course_id, kind, title, price_agorot, access_days, active, position) VALUES (?,?,?,?,?,?,?,?)",
+      [plan.id, course.id, plan.kind, plan.title, plan.priceAgorot, plan.accessDays ?? null, plan.kind === "monthly" ? 1 : 0, index + 1],
+    );
+  }
 
   for (const fact of calculator.model.facts) {
     const result = await db.run("INSERT OR IGNORE INTO calculator_facts (model, fact_key, status) VALUES (?,?,'pending')", [
@@ -56,22 +76,14 @@ export async function seedCourse(db: SqlDb, course: SeedCourse, actorId: string 
       [unit.id, course.id, unitIndex + 1, unit.slug, unit.title, unit.description, unit.status],
     );
 
-    const unitQuestionIds: string[] = [];
     for (const [lessonIndex, lesson] of unit.lessons.entries()) {
       await upsertLesson(db, unit.id, lessonIndex + 1, lesson, course.calculatorModel, summary);
-      const quizIds: string[] = [];
       for (const [qIndex, question] of lesson.questions.entries()) {
         await upsertQuestion(db, lesson.id, qIndex + 1, question, course.calculatorModel, summary);
-        if (question.role === "quiz") quizIds.push(question.id);
-        if (lesson.status !== "draft") unitQuestionIds.push(question.id);
       }
-      if (lesson.questions.length) {
-        await upsertQuiz(db, `quiz_${lesson.id}`, course.id, unit.id, lesson.id, "lesson", `מבחן סיכום: ${lesson.title}`, quizIds, null);
-      }
-    }
-    if (unitQuestionIds.length) {
-      await upsertQuiz(db, `exam_${unit.id}`, course.id, unit.id, null, "unit", `מבחן פרק: ${unit.title}`, unitQuestionIds, null);
-      await upsertQuiz(db, `sim_${unit.id}`, course.id, unit.id, null, "simulation", `סימולציה בתנאי מבחן: ${unit.title}`, unitQuestionIds, 30);
+      await upsertLessonStructure(db, course, lesson);
+      await upsertAssignment(db, course.id, lesson);
+      summary.assignments++;
     }
   }
 
@@ -188,15 +200,44 @@ async function upsertQuestion(db: SqlDb, lessonId: string, position: number, q: 
   if (backToReview) summary.questions.sentBackToReview++;
 }
 
-async function upsertQuiz(
-  db: SqlDb, id: string, courseId: string, unitId: string, lessonId: string | null,
-  kind: "lesson" | "unit" | "simulation", title: string, questionIds: string[], timeLimit: number | null,
-) {
+/**
+ * Lesson number, topics and chapter mapping. Checkpoint and player-chapter
+ * timings are set by an editor after the video is produced, so the import only
+ * fills them while they are still empty.
+ */
+async function upsertLessonStructure(db: SqlDb, course: SeedCourse, lesson: SeedLesson) {
   await db.run(
-    `INSERT INTO quizzes (id, course_id, unit_id, lesson_id, kind, title, question_ids_json, pass_score, time_limit_minutes, status)
-     VALUES (?,?,?,?,?,?,?,70,?,'published')
-     ON CONFLICT(id) DO UPDATE SET unit_id=excluded.unit_id, lesson_id=excluded.lesson_id, title=excluded.title,
-       question_ids_json=excluded.question_ids_json, time_limit_minutes=excluded.time_limit_minutes`,
-    [id, courseId, unitId, lessonId, kind, title, JSON.stringify(questionIds), timeLimit],
+    `UPDATE lessons SET number = ?, topics_json = ?,
+       checkpoints_json = CASE WHEN checkpoints_json = '[]' THEN ? ELSE checkpoints_json END,
+       video_chapters_json = CASE WHEN video_chapters_json = '[]' THEN ? ELSE video_chapters_json END
+     WHERE id = ?`,
+    [lesson.number, JSON.stringify(lesson.topics), JSON.stringify(lesson.checkpoints ?? []), JSON.stringify(lesson.videoChapters ?? []), lesson.id],
   );
+  const mapped = await db.get("SELECT 1 FROM lesson_chapters WHERE lesson_id = ? LIMIT 1", [lesson.id]);
+  if (mapped) return;
+  for (const number of lesson.chapters) {
+    const chapter = course.chapters.find((c) => c.number === number);
+    if (chapter) await db.run("INSERT OR IGNORE INTO lesson_chapters (lesson_id, chapter_id) VALUES (?,?)", [lesson.id, chapter.id]);
+  }
+}
+
+/**
+ * One homework assignment per lesson, created as a draft. The imported
+ * questions are added to its editable item list; publishing (which pins the
+ * approved question versions) is a reviewer action.
+ */
+async function upsertAssignment(db: SqlDb, courseId: string, lesson: SeedLesson) {
+  const id = `asg_${lesson.id}`;
+  await db.run(
+    `INSERT INTO assignments (id, course_id, lesson_id, number, title, question_count) VALUES (?,?,?,?,?,?)
+     ON CONFLICT(id) DO UPDATE SET number = excluded.number, title = excluded.title`,
+    [id, courseId, lesson.id, lesson.number, `מטלה ${lesson.number}`, lesson.assignmentSize ?? 20],
+  );
+  for (const [index, question] of lesson.questions.entries()) {
+    await db.run(
+      `INSERT INTO assignment_items (assignment_id, question_id, position) VALUES (?,?,?)
+       ON CONFLICT(assignment_id, question_id) DO UPDATE SET position = excluded.position`,
+      [id, question.id, index + 1],
+    );
+  }
 }

@@ -2,223 +2,165 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/academy/auth/session";
 import { getDb } from "@/academy/db";
-import { LearningService } from "@/academy/services/learning";
+import { PDF_KIND_LABEL } from "@/academy/pdf/lesson-documents";
+import { LearningService, LESSON_STATE_LABEL } from "@/academy/services/learning";
 import ExampleSolution from "@/components/academy/ExampleSolution";
-import { IconCheck, IconChevronDown, IconChevronLeft, IconLock, IconPlay } from "@/components/academy/icons";
+import { IconChevronLeft, IconDownload, IconFile, IconLock } from "@/components/academy/icons";
 import LessonFrame from "@/components/academy/LessonFrame";
-import LessonTabs from "@/components/academy/LessonTabs";
+import LessonVideo from "@/components/academy/LessonVideo";
 import Md from "@/components/academy/Md";
-import VideoPlayer from "@/components/academy/VideoPlayer";
-import { btn } from "@/components/academy/ui";
+import { Badge, btn } from "@/components/academy/ui";
 
-const short = (title: string) => title.replace(/^(שיעור|יחידה) \d+: /, "");
+const sizeLabel = (bytes: number) => (bytes > 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
 
+/** Lesson page (spec §7, §32): header · PDFs above the video · video · lesson questions · homework. */
 export default async function LessonPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const user = await requireUser(`/academy/lesson/${slug}`);
   const service = new LearningService(await getDb());
   const view = await service.getLessonView(user, slug);
   if (!view) notFound();
-  const syllabus = await service.getSyllabus(user);
+  const syllabus = await service.getSyllabus(user, view.courseId);
+  const lessons = (syllabus?.lessons ?? []).filter((l) => l.available).map((l) => ({ number: l.number, slug: l.slug, title: l.title, state: l.state, allowed: l.allowed }));
+  const courseTitle = syllabus?.course.title ?? "";
 
-  const units = syllabus?.units ?? [];
-  const allLessons = units.flatMap((u) => u.lessons.filter((l) => l.available));
-  const completed = allLessons.filter((l) => l.progress?.completed).length;
-  const coursePct = allLessons.length ? Math.round((completed / allLessons.length) * 100) : 0;
-  const unitIndex = units.findIndex((u) => u.id === view.unit.id);
-  const unitLessons = units[unitIndex]?.lessons.filter((l) => l.available) ?? [];
-  const lessonIndex = unitLessons.findIndex((l) => l.slug === slug);
-  const flatIndex = allLessons.findIndex((l) => l.slug === slug);
-  const prev = flatIndex > 0 ? allLessons[flatIndex - 1] : null;
-
-  const courseNav = (
+  const header = (
     <div>
-      <div className="flex flex-col gap-3 border-b border-line px-5 py-5">
-        <span className="text-[15px] font-bold">תוכן הקורס</span>
-        <div className="flex justify-between text-[13px] text-muted">
-          <span>הושלמו {completed} מתוך {allLessons.length} שיעורים</span>
-          <span className="ltr">{coursePct}%</span>
-        </div>
-        <div className="h-1 rounded bg-line"><div className="h-1 rounded bg-dark" style={{ width: `${coursePct}%` }} /></div>
+      <div className="flex flex-wrap items-center gap-2 text-[13px] text-muted">
+        {view.lesson.chapters.map((c) => <span key={c.number}>פרק {c.number}: {c.title}</span>)}
+        {view.lesson.minutes ? <span>· כ-{view.lesson.minutes} דקות</span> : null}
+        {"progress" in view && <span>· {LESSON_STATE_LABEL[view.assignment?.grade ? "completed" : view.progress ? "in_progress" : "not_started"]}</span>}
+        {"staffPreview" in view && view.staffPreview && <Badge tone="amber">תצוגה מקדימה, טרם פורסם</Badge>}
       </div>
-      <ol>
-        {units.map((unit, ui) => {
-          const open = unit.id === view.unit.id;
-          const lessons = unit.lessons;
-          const done = lessons.filter((l) => l.progress?.completed).length;
-          return (
-            <li key={unit.id} className="border-b border-line">
-              <details open={open} className="group">
-                <summary className="flex cursor-pointer list-none items-center gap-2 px-5 py-4 text-[15px]">
-                  <IconChevronDown size={16} className="shrink-0 text-muted transition-transform group-[:not([open])]:-rotate-90" />
-                  <span className={`flex-1 ${open ? "font-bold" : ""}`}>פרק {ui + 1}: {short(unit.title)}</span>
-                  <span className="ltr text-[13px] text-muted">{done}/{lessons.length}</span>
-                </summary>
-                <ol className="pb-2">
-                  {lessons.map((l, li) => {
-                    const current = l.slug === slug;
-                    const icon = l.progress?.completed ? (
-                      <IconCheck size={16} className="text-success" />
-                    ) : current ? (
-                      <IconPlay size={12} className="text-accent" />
-                    ) : !l.available || !l.allowed ? (
-                      <IconLock size={14} className="text-faint" />
-                    ) : (
-                      <span className="block h-4 w-4 rounded-full border border-input" />
-                    );
-                    const row = (
-                      <span className={`mx-3 flex items-start gap-3 rounded-md px-3 py-2.5 text-sm ${current ? "bg-accent-soft font-semibold text-ink" : l.available ? "text-body hover:bg-surface" : "text-faint"}`}>
-                        <span className="mt-0.5 flex w-4 shrink-0 justify-center">{icon}</span>
-                        <span className="flex-1 leading-snug">{ui + 1}.{li + 1} {short(l.title)}</span>
-                        <span className="ltr shrink-0 text-xs text-muted">{l.available ? `${l.minutes}′` : "בקרוב"}</span>
-                      </span>
-                    );
-                    return <li key={l.id}>{l.available ? <Link href={`/academy/lesson/${l.slug}`} aria-current={current ? "page" : undefined}>{row}</Link> : row}</li>;
-                  })}
-                </ol>
-              </details>
-            </li>
-          );
-        })}
-      </ol>
+      <h1 className="mt-2 text-[26px] font-bold leading-tight text-ink sm:text-[32px]">{view.lesson.title}</h1>
+      <p className="mt-2 text-[16px] leading-relaxed text-muted">{view.lesson.description}</p>
+      {view.lesson.topics.length > 0 && (
+        <ul className="mt-3 flex flex-wrap gap-2">
+          {view.lesson.topics.map((t) => <li key={t} className="rounded-md bg-line-soft px-2.5 py-1 text-[13px] text-subtle">{t}</li>)}
+        </ul>
+      )}
     </div>
-  );
-
-  const breadcrumb = (
-    <span>
-      {syllabus?.course.title} <span className="mx-1.5">‹</span> פרק {unitIndex + 1}: {short(view.unit.title)} <span className="mx-1.5">‹</span>
-      <span className="font-semibold text-ink">שיעור {lessonIndex + 1}</span>
-    </span>
   );
 
   if (!view.allowed) {
     return (
-      <LessonFrame breadcrumb={breadcrumb} courseNav={courseNav} lessonId={view.lesson.id} tutorContext={short(view.lesson.title)}>
-        <div className="rounded-xl border border-line p-8 text-center">
+      <LessonFrame lessons={lessons} currentSlug={slug} courseTitle={courseTitle}>
+        {header}
+        <div className="mt-8 rounded-xl border border-line p-8 text-center">
           <IconLock size={22} className="mx-auto text-muted" />
-          <h1 className="mt-3 text-2xl font-bold">{view.lesson.title}</h1>
-          <p className="mt-2 text-[15px] text-muted">{view.lesson.description}</p>
           {view.reason === "subscription_required" && (
             <>
-              <p className="mt-5 text-[15px] text-body">השיעור זמין למנויים ולמשתמשים בתקופת ניסיון.</p>
-              <Link className={`${btn.primary} mt-4`} href="/academy/account">להתחלת תקופת ניסיון</Link>
+              <p className="mt-3 text-[15px] text-body">השיעור, קובצי ה-PDF והמטלה פתוחים לתלמידים שרכשו את הקורס.</p>
+              <Link className={`${btn.primary} mt-4`} href="/academy/pricing">לרכישת הקורס</Link>
             </>
           )}
-          {view.reason === "not_published" && <p className="mt-5 text-[15px] text-body">השיעור בהכנה ויפורסם לאחר בדיקה מקצועית.</p>}
+          {view.reason === "not_published" && <p className="mt-3 text-[15px] text-body">השיעור בהכנה ויפורסם לאחר בדיקה מקצועית.</p>}
         </div>
       </LessonFrame>
     );
   }
 
-  const mainFormula = view.formulas[0];
-  const p = view.progress;
-
-  const tabs = [
-    {
-      id: "summary",
-      label: "סיכום",
-      content: (
-        <div className="flex flex-col gap-6">
-          <Md text={view.summary_md} className="text-[17px] leading-[1.85] !text-body" />
-          {view.objectives.length > 0 && (
-            <div className="rounded-xl border border-line p-6">
-              <h3 className="mb-3 text-[15px] font-bold">נקודות מפתח</h3>
-              <ul className="flex flex-col gap-2 text-[15px] text-body">
-                {view.objectives.map((o) => <li key={o}>• {o}</li>)}
-              </ul>
-            </div>
-          )}
-        </div>
-      ),
-    },
-    {
-      id: "formulas",
-      label: "נוסחאות",
-      content: (
-        <div className="flex flex-col gap-3">
-          <p className="text-[13px] text-muted">הנוסחאות מסבירות את ההיגיון. בשאלות מבחן פותרים קודם במחשבון.</p>
-          {view.formulas.map((f) => (
-            <div key={f.name} className="rounded-xl border border-line p-5">
-              <div className="text-[15px] font-semibold">{f.name}</div>
-              <div className="ltr my-3 rounded-md bg-surface px-4 py-3 text-center font-mono text-lg">{f.formula}</div>
-              <div className="text-[13px] text-muted">{f.meaning}</div>
-            </div>
-          ))}
-        </div>
-      ),
-    },
-    ...(view.examples.length
-      ? [{
-          id: "examples",
-          label: "דוגמאות",
-          content: (
-            <div className="flex flex-col gap-8">
-              {view.examples.map((e) => (
-                <div key={e.title}>
-                  <h3 className="mb-3 text-lg font-bold">{e.title}</h3>
-                  <ExampleSolution problem={e.problem_md} formula={e.solution_md} calculator={e.calculator} />
-                </div>
-              ))}
-            </div>
-          ),
-        }]
-      : []),
-    {
-      id: "practice",
-      label: "תרגול קשור",
-      content: (
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-4 rounded-xl border border-line p-6 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="text-[15px] font-bold">תרגול שאלות</div>
-              <div className="mt-1 text-[13px] text-muted">{view.practice.length} שאלות בסגנון הבחינה, עם פתרון במחשבון אחרי כל תשובה.{p?.practice_done ? " · התרגול הושלם" : ""}</div>
-            </div>
-            <Link href={`/academy/practice/${slug}`} className={btn.primary}>לתרגול</Link>
-          </div>
-          {view.quiz && view.quiz.count > 0 && (
-            <div className="flex flex-col gap-4 rounded-xl border border-line p-6 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="text-[15px] font-bold">מבחן סיכום</div>
-                <div className="mt-1 text-[13px] text-muted">{view.quiz.count} שאלות. מעבר המבחן מסמן את השיעור כהושלם.{p?.quiz_passed ? " · עברת" : ""}</div>
-              </div>
-              <Link href={`/academy/quiz/${view.quiz.id}`} className={btn.dark}>למבחן</Link>
-            </div>
-          )}
-        </div>
-      ),
-    },
-  ];
-
   return (
-    <LessonFrame breadcrumb={breadcrumb} courseNav={courseNav} lessonId={view.lesson.id} tutorContext={`שיעור ${unitIndex + 1}.${lessonIndex + 1}`}>
-      {view.video ? (
-        <VideoPlayer assetId={view.video.id} url={view.video.url} title={view.video.title} />
-      ) : (
-        <div className="flex aspect-video flex-col items-center justify-center gap-5 rounded-md bg-[#0B1220] px-6 text-center text-white">
-          {mainFormula && (
-            <>
-              <span className="text-sm text-brand-300">{mainFormula.name}</span>
-              <span className="ltr text-2xl sm:text-4xl" style={{ fontFamily: "'Times New Roman', serif" }}>{mainFormula.formula}</span>
-            </>
-          )}
-          <span className="text-sm text-faint">סרטון השיעור בהפקה. בינתיים אפשר ללמוד מהסיכום, מהדוגמאות ומהתרגול.</span>
-        </div>
-      )}
+    <LessonFrame lessons={lessons} currentSlug={slug} courseTitle={courseTitle}>
+      {header}
 
-      <div className="mt-6 text-[13px] text-muted">
-        פרק {unitIndex + 1} · שיעור {lessonIndex + 1} מתוך {unitLessons.length} · {view.lesson.minutes} דקות
-        {view.staffPreview && <span className="mr-2 rounded-md bg-accent-soft px-2 py-0.5 text-accent">תצוגה מקדימה, טרם פורסם</span>}
-      </div>
-      <h1 className="mt-2 text-[28px] font-bold leading-tight sm:text-[32px]">{short(view.lesson.title)}</h1>
-      <p className="mt-3 text-[17px] leading-relaxed text-muted">{view.lesson.description}</p>
-      <div className="mt-6 flex flex-wrap gap-3">
-        {prev && <Link href={`/academy/lesson/${prev.slug}`} className={btn.secondary}>השיעור הקודם</Link>}
-        {view.nextLesson && (
-          <Link href={`/academy/lesson/${view.nextLesson.slug}`} className={btn.dark}>לשיעור הבא <IconChevronLeft size={16} /></Link>
+      {/* Materials ABOVE the video (spec §7.2). */}
+      <section aria-labelledby="materials" className="mt-6">
+        <h2 id="materials" className="sr-only">חומרי השיעור</h2>
+        {view.materials.length ? (
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {view.materials.map((m) => (
+              <li key={m.id} className="flex items-center gap-3 rounded-xl border border-line bg-white p-4">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-accent-soft text-accent"><IconFile size={20} /></span>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[15px] font-semibold text-ink">{m.kind === "supplement_pdf" ? m.title : `${PDF_KIND_LABEL[m.kind as keyof typeof PDF_KIND_LABEL]} — PDF`}</div>
+                  <div className="text-xs text-muted">גרסה {m.version} · {sizeLabel(m.sizeBytes)}{m.draft ? " · טיוטה (צוות בלבד)" : ""}</div>
+                </div>
+                <a href={`/api/academy/materials/${m.id}`} target="_blank" rel="noopener" className="text-sm font-semibold text-accent">צפייה</a>
+                <a href={`/api/academy/materials/${m.id}?download=1`} className="inline-flex items-center gap-1 text-sm font-semibold text-ink" aria-label={`הורדת ${m.title}`}>
+                  <IconDownload size={16} /> הורדה
+                </a>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="rounded-xl border border-dashed border-line p-4 text-sm text-muted">קובצי השיעור (שאלות השיעור ודף נוסחאות) יתווספו כאן לאחר אישורם.</p>
+        )}
+      </section>
+
+      <div className="mt-6">
+        {view.video ? (
+          <LessonVideo assetId={view.video.id} url={view.video.url} title={view.video.title} chapters={view.videoChapters} checkpoints={view.checkpoints} />
+        ) : (
+          <div className="flex aspect-video flex-col items-center justify-center gap-3 rounded-xl bg-[#0B1220] px-6 text-center text-white">
+            <span className="text-lg font-semibold">סרטון השיעור בהפקה</span>
+            <span className="max-w-md text-sm text-white/70">הסרטון יפורסם לאחר בדיקה מקצועית. בינתיים אפשר לעבור על שאלות השיעור והפתרונות שלהן למטה.</span>
+          </div>
         )}
       </div>
-      <div className="mt-8">
-        <LessonTabs tabs={tabs} />
+
+      {/* Homework (spec §7.5) */}
+      {view.assignment && (
+        <section className="mt-6 flex flex-col gap-4 rounded-xl border border-line bg-surface p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="text-[16px] font-bold text-ink">{view.assignment.title} — {view.assignment.questionCount || 20} שאלות</div>
+            <div className="mt-1 text-sm text-muted">
+              {view.assignment.grade
+                ? `הוגשה. ענית נכון על ${view.assignment.grade.correct} מתוך ${view.assignment.grade.total} · ציון ${view.assignment.grade.score}`
+                : view.assignment.published ? "שאלות אמריקאיות קבועות, עם פתרון וסרטון הסבר לכל שאלה." : "המטלה עוד לא פורסמה (תצוגת צוות)."}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            {view.assignment.grade && <Link className={btn.secondary} href={`/academy/attempts/${view.assignment.grade.attemptId}/results`}>לתוצאות</Link>}
+            <Link className={btn.dark} href={`/academy/assignments/${view.assignment.id}`}>
+              {view.assignment.grade ? "לתרגול נוסף" : `למטלה ${view.assignment.number}`} <IconChevronLeft size={16} />
+            </Link>
+          </div>
+        </section>
+      )}
+
+      {/* Lesson questions: the same questions, numbering and order as the PDF and the video (spec §7.4). */}
+      {view.examples.length > 0 && (
+        <section className="mt-10">
+          <h2 className="text-xl font-bold text-ink">שאלות השיעור</h2>
+          <p className="mt-1 text-sm text-muted">אלה השאלות שנפתרות בסרטון. נסו לפתור לבד, ואז פתחו את הפתרון.</p>
+          <ol className="mt-4 flex flex-col gap-4">
+            {view.examples.map((e, i) => (
+              <li key={e.title}>
+                <details className="group rounded-xl border border-line">
+                  <summary className="flex cursor-pointer list-none items-start gap-3 p-4">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-line-soft text-sm font-bold">{i + 1}</span>
+                    <span className="flex-1 text-[15px] text-ink">{e.title.replace(/^שאלה\s+\d+\s*:\s*/, "")}</span>
+                    <span className="text-sm font-semibold text-accent group-open:hidden">פתרון</span>
+                  </summary>
+                  <div className="border-t border-line p-4">
+                    <ExampleSolution problem={e.problem_md} formula={e.solution_md} calculator={e.calculator} />
+                  </div>
+                </details>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
+      {view.summary_md && (
+        <section className="mt-10">
+          <details className="rounded-xl border border-line">
+            <summary className="cursor-pointer list-none p-4 text-[16px] font-bold text-ink">סיכום השיעור</summary>
+            <div className="border-t border-line p-5">
+              <Md text={view.summary_md} className="text-[16px] leading-[1.85] !text-body" />
+            </div>
+          </details>
+        </section>
+      )}
+
+      <div className="mt-10 flex flex-wrap justify-between gap-3 border-t border-line pt-6">
+        {view.prevLesson ? <Link href={`/academy/lesson/${view.prevLesson.slug}`} className={btn.secondary}>לשיעור הקודם</Link> : <span />}
+        {view.nextLesson && (
+          <Link href={view.nextLesson.allowed ? `/academy/lesson/${view.nextLesson.slug}` : "/academy/pricing"} className={btn.dark}>
+            לשיעור הבא <IconChevronLeft size={16} />
+          </Link>
+        )}
       </div>
     </LessonFrame>
   );

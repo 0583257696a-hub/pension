@@ -71,34 +71,29 @@ describe("entitlements", () => {
     expect(decideLessonAccess(student, { access: "free", status: "review" }, none).reason).toBe("not_published");
   });
 
-  it("gives one trial, keeps access after cancel until the end, then expires", async () => {
-    const db = await freshDb();
-    await makeUser(db, "admin@example.com");
-    const student = await makeUser(db, "s@example.com");
-    const svc = new EntitlementService(db);
-    const trial = await svc.startTrial(student.id, COURSE_ID, 7);
-    expect((await svc.getEntitlement(student, COURSE_ID)).reason).toBe("trial");
-    await expect(svc.startTrial(student.id, COURSE_ID, 7)).rejects.toThrow();
-    await svc.cancel(trial.id, student.id);
-    const canceled = await svc.getEntitlement(student, COURSE_ID);
-    expect(canceled.hasAccess).toBe(true);
-    expect(canceled.reason).toBe("canceled_until_period_end");
-    const later = new Date(Date.now() + 8 * 86400_000);
-    const expired = await svc.getEntitlement(student, COURSE_ID, later);
-    expect(expired.hasAccess).toBe(false);
-    expect(expired.reason).toBe("expired");
-  });
-
-  it("records manual activation with an audit trail and supports revocation", async () => {
+  it("grants manual access with a reference, and revocation takes effect immediately", async () => {
     const db = await freshDb();
     const admin = await makeUser(db, "admin@example.com");
     const student = await makeUser(db, "s@example.com");
     const svc = new EntitlementService(db);
-    const sub = await svc.grantManual(student.id, COURSE_ID, new Date(Date.now() + 30 * 86400_000), "חשבונית 1001", admin.id);
+    await expect(svc.grantManual(student.id, COURSE_ID, null, "  ", admin.id)).rejects.toThrow();
+    const ent = await svc.grantManual(student.id, COURSE_ID, new Date(Date.now() + 30 * 86400_000), "חשבונית 1001", admin.id);
     expect((await svc.getEntitlement(student, COURSE_ID)).reason).toBe("active");
-    expect(await db.get("SELECT id FROM audit_log WHERE action = 'subscription.grant_manual'")).toBeTruthy();
-    await svc.revoke(sub.id, admin.id, "refund");
-    expect((await svc.getEntitlement(student, COURSE_ID, new Date(Date.now() + 1000))).hasAccess).toBe(false);
+    expect(await db.get("SELECT id FROM audit_log WHERE action = 'entitlement.grant.admin'")).toBeTruthy();
+    await svc.revoke(ent.id, admin.id, "refund");
+    expect((await svc.getEntitlement(student, COURSE_ID)).hasAccess).toBe(false);
+  });
+
+  it("expires access at the end date", async () => {
+    const db = await freshDb();
+    const admin = await makeUser(db, "admin@example.com");
+    const student = await makeUser(db, "s@example.com");
+    const svc = new EntitlementService(db);
+    await svc.grantManual(student.id, COURSE_ID, new Date(Date.now() + 86400_000), "מלגה", admin.id);
+    expect((await svc.getEntitlement(student, COURSE_ID)).hasAccess).toBe(true);
+    const later = await svc.getEntitlement(student, COURSE_ID, new Date(Date.now() + 2 * 86400_000));
+    expect(later.hasAccess).toBe(false);
+    expect(later.reason).toBe("expired");
   });
 
   it("has no simulated payment: checkout fails until a real provider is configured", async () => {

@@ -7,14 +7,29 @@ import { LogoMark } from "../icons";
 import UserMenu from "./UserMenu";
 
 const SECTIONS: Array<{ title?: string; items: Array<{ href: string; label: string; exact?: boolean }> }> = [
-  { items: [{ href: "/academy/admin", label: "סקירה כללית", exact: true }, { href: "/academy/admin/users", label: "תלמידים ומנויים" }] },
+  { items: [{ href: "/academy/admin", label: "סקירה כללית", exact: true }] },
+  {
+    title: "קורס ולמידה",
+    items: [
+      { href: "/academy/admin/content", label: "שיעורים ומאגר שאלות" },
+      { href: "/academy/admin/assignments", label: "מטלות" },
+      { href: "/academy/admin/materials", label: "קובצי PDF" },
+    ],
+  },
   {
     title: "הפקת תוכן",
     items: [
-      { href: "/academy/admin/content", label: "תוכן ובקרה אקדמית" },
-      { href: "/academy/admin/calculator", label: "אימות מחשבון" },
-      { href: "/academy/admin/ai", label: "סטודיו AI" },
+      { href: "/academy/admin/ai", label: "AI Content Factory" },
       { href: "/academy/admin/studio", label: "הפקת סרטונים" },
+      { href: "/academy/admin/calculator", label: "אימות מחשבון" },
+    ],
+  },
+  {
+    title: "תלמידים ומסחר",
+    items: [
+      { href: "/academy/admin/support", label: "פניות תלמידים" },
+      { href: "/academy/admin/users", label: "תלמידים וגישה" },
+      { href: "/academy/admin/billing", label: "מסלולים ותשלומים" },
     ],
   },
 ];
@@ -41,7 +56,7 @@ export default function AdminShell({ name, email, role, counts, children }: {
             >
               {item.label}
               {counts[item.href] ? (
-                <span className={`rounded px-1.5 py-0.5 text-[11px] font-bold ${item.href.endsWith("content") ? "bg-[#7A2E0E] text-[#FEDF89]" : "bg-[#3730A3] text-[#E0E7FF]"}`}>{counts[item.href]}</span>
+                <span className={`rounded px-1.5 py-0.5 text-[11px] font-bold ${item.href.endsWith("content") || item.href.endsWith("support") ? "bg-[#7A2E0E] text-[#FEDF89]" : "bg-[#3730A3] text-[#E0E7FF]"}`}>{counts[item.href]}</span>
               ) : null}
             </Link>
           ))}

@@ -1,11 +1,9 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { describe, expect, it } from "vitest";
 import type { LlmClient, StreamTurnRequest } from "../ai/client";
-import { TutorService, TUTOR_INSTRUCTIONS } from "../ai/tutor";
 import { runCalculatorTool, runMathTool } from "../ai/tools";
 import { ContentEngine, addMaterial } from "../ai/content-engine";
 import { ContentAdminService } from "../services/content-admin";
-import { reviewFact } from "../services/facts";
 import { FC200V } from "../calculator/fc200v/model";
 import { COURSE_ID } from "../content/course";
 import { freshDb, makeUser } from "./helpers";
@@ -58,50 +56,6 @@ describe("tutor tools", () => {
     expect(verified).toMatchObject({ ok: true, final_display: "FV=16288.94627", mode: "CMPD" });
     expect(runCalculatorTool({ mode: "CMPD", n: 10, i: 5, py: 1, cy: 1, solve_for: "FV" }, "casio-fc-200v", all).ok).toBe(false); // missing values
     expect(runCalculatorTool({ mode: "COMP", comp_function: "nCr", a: 10, b: 3 }, "casio-fc-200v", all)).toMatchObject({ ok: true, final_display: "120" });
-  });
-});
-
-describe("AI tutor", () => {
-  it("uses calculator-first instructions, hides the answer before an attempt, runs tools and saves the thread", async () => {
-    const { db, student } = await publishedUnit1();
-    const llm = new FakeLlm([
-      { text: "נפתור במחשבון. ", tools: [{ name: "fc200v_sequence", input: { mode: "CMPD", set: "End", n: 10, i: 5, pv: -10000, pmt: 0, py: 1, cy: 1, solve_for: "FV" } }] },
-      { text: "הרצף עדיין לא מאומת, ולכן נסביר בנוסחה: FV = 10,000 × 1.05¹⁰." },
-    ]);
-    const tutor = new TutorService(db, llm);
-    let streamed = "";
-    const answer = await tutor.ask(student, { lessonId: "lsn_tvm_compound", questionId: "q_tvm_c_01", message: "איך פותרים?" }, (d) => (streamed += d));
-    expect(answer).toContain("בנוסחה");
-    expect(streamed).toContain("נפתור במחשבון");
-    const system = llm.requests[0].system;
-    expect(system).toContain(TUTOR_INSTRUCTIONS.slice(0, 60));
-    expect(system).toContain("Calculator-first policy");
-    expect(system).toContain("has NOT answered yet");
-    expect(system).not.toContain("Verified correct answer");
-    // The tool result was sent back to the model and said not_verified (facts pending).
-    const toolResult = llm.requests[1].messages.at(-1)!;
-    expect(JSON.stringify(toolResult.content)).toContain("not_verified");
-    const thread = await tutor.getThread(student, "lsn_tvm_compound", "q_tvm_c_01");
-    expect(JSON.parse(thread!.messages_json)).toHaveLength(2);
-  });
-
-  it("gives the tutor the verified sequence after the student answered and facts are confirmed", async () => {
-    const { db, admin, student } = await publishedUnit1();
-    for (const f of FC200V.facts) await reviewFact(db, "casio-fc-200v", f.key, "confirmed", "guide", "", admin.id);
-    const { LearningService } = await import("../services/learning");
-    await new LearningService(db).answerQuestion(student, "q_tvm_c_01", "a");
-    const llm = new FakeLlm([{ text: "במצב CMPD…" }]);
-    await new TutorService(db, llm).ask(student, { lessonId: "lsn_tvm_compound", questionId: "q_tvm_c_01", message: "הסבר" }, () => undefined);
-    const system = llm.requests[0].system;
-    expect(system).toContain("Verified correct answer: (b)");
-    expect(system).toContain("FV=16288.94627");
-    expect(system).toContain("Confirmed calculator facts");
-  });
-
-  it("refuses tutoring for a locked paid lesson", async () => {
-    const { db, student } = await publishedUnit1();
-    const tutor = new TutorService(db, new FakeLlm([]));
-    await expect(tutor.ask(student, { lessonId: "lsn_tvm_rates", questionId: null, message: "שאלה" }, () => undefined)).rejects.toThrow();
   });
 });
 

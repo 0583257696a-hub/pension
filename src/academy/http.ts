@@ -4,6 +4,10 @@ import { ReviewGateError } from "./services/content-admin";
 import { StudioError } from "./services/video-studio";
 import { PaymentsNotConfiguredError } from "./billing/payment-provider";
 import { LlmNotConfiguredError, LlmRefusalError } from "./ai/client";
+import { AssignmentError } from "./services/assignments";
+import { HelpError } from "./services/help";
+import { MaterialsError } from "./services/materials";
+import { BillingError } from "./billing/service";
 
 export function json(data: unknown, status = 200): Response {
   return Response.json(data, { status, headers: { "cache-control": "no-store" } });
@@ -12,7 +16,9 @@ export function json(data: unknown, status = 200): Response {
 export function errorResponse(error: unknown): Response {
   if (error instanceof AuthError) return json({ error: error.message, code: error.code }, error.code === "forbidden" ? 403 : error.code === "unauthenticated" ? 401 : 400);
   if (error instanceof AccessDeniedError) return json({ error: error.message, code: error.reason }, error.reason === "login_required" ? 401 : error.reason === "not_found" ? 404 : 403);
-  if (error instanceof ReviewGateError || error instanceof StudioError) return json({ error: error.message }, 400);
+  if (error instanceof ReviewGateError || error instanceof StudioError || error instanceof AssignmentError || error instanceof HelpError || error instanceof MaterialsError || error instanceof BillingError) {
+    return json({ error: error.message }, 400);
+  }
   if (error instanceof PaymentsNotConfiguredError) return json({ error: error.message, code: "payments_not_configured" }, 409);
   if (error instanceof LlmNotConfiguredError) return json({ error: error.message, code: "llm_not_configured" }, 503);
   if (error instanceof LlmRefusalError) return json({ error: error.message, code: "refusal" }, 422);

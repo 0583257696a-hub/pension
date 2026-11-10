@@ -4,6 +4,7 @@ import { newId } from "../lib/ids";
 import { parseJson } from "../lib/json";
 import { verifyQuestion, type VerificationReport } from "../content/verify";
 import { calculatorVerdict, getFactStatuses } from "./facts";
+import { snapshotQuestion } from "./question-versions";
 import type { LessonRow, QuestionRow, StoredCalculator, UnitRow } from "./types";
 
 export class ReviewGateError extends Error {}
@@ -92,7 +93,9 @@ export class ContentAdminService {
     if (action !== "approve" && !note.trim()) throw new ReviewGateError("יש לפרט את סיבת הדחייה או את התיקונים הנדרשים");
     const status = action === "approve" ? "approved" : action === "reject" ? "rejected" : "review";
     await this.db.run("UPDATE questions SET status = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?", [status, questionId]);
-    await this.logReview(reviewer, "question", questionId, action, note);
+    // Approval freezes the content as a question version; published assignments pin these versions.
+    const version = action === "approve" ? await snapshotQuestion(this.db, questionId, reviewer.id) : null;
+    await this.logReview(reviewer, "question", questionId, action, version ? `${note ? `${note} · ` : ""}גרסה ${version}` : note);
   }
 
   async setLessonStatus(reviewer: User, lessonId: string, action: "publish" | "unpublish") {

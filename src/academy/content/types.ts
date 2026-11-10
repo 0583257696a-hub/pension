@@ -34,9 +34,38 @@ export interface SeedExample {
   calculator?: SeedCalculator;
 }
 
+/** An academic chapter from the reference syllabus (14 chapters in 3 parts). */
+export interface SeedChapter {
+  id: string;
+  number: number;
+  part: "finance" | "statistics" | "investments";
+  title: string;
+  topics: string[];
+}
+
+/** A pause point in the lesson video: the student tries a lesson question before the explanation. */
+export interface SeedCheckpoint {
+  /** Seconds into the lesson video. Null until the produced video is timed by an editor. */
+  atSeconds: number | null;
+  /** 1-based number of the lesson question (same number as in the questions PDF). */
+  question: number;
+  title: string;
+}
+
 export interface SeedLesson {
   id: string;
   slug: string;
+  /** Course-wide lesson number shown to students ("שיעור 1"). */
+  number: number;
+  /** Chapter numbers this lesson covers. */
+  chapters: number[];
+  /** Topics shown in the lesson header. */
+  topics: string[];
+  checkpoints?: SeedCheckpoint[];
+  /** Player chapters for skipping to a topic. */
+  videoChapters?: Array<{ atSeconds: number | null; title: string }>;
+  /** Number of questions the homework assignment must have before it can be published (default 20). */
+  assignmentSize?: number;
   title: string;
   description: string;
   access: "free" | "paid";
@@ -45,7 +74,9 @@ export interface SeedLesson {
   objectives: string[];
   summary: string;
   formulas: Array<{ name: string; formula: string; meaning: string }>;
+  /** Lesson questions: solved by the instructor in the video and printed, in this order, in the questions PDF. */
   examples: SeedExample[];
+  /** Homework assignment questions, in assignment order. */
   questions: SeedQuestion[];
 }
 
@@ -67,5 +98,8 @@ export interface SeedCourse {
   priceIls: number;
   trialDays: number;
   calculatorModel: string;
+  chapters: SeedChapter[];
+  plans: Array<{ id: string; kind: "one_time" | "monthly" | "annual"; title: string; priceAgorot: number; accessDays?: number }>;
+  /** Parts of the course (finance, statistics, investments). Lessons are numbered across parts. */
   units: SeedUnit[];
 }

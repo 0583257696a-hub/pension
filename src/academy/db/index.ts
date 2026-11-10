@@ -56,14 +56,22 @@ async function createDb(): Promise<SqlDb> {
     }
   }
   await migrate(db);
-  // First run: import the built-in course in review status (nothing is published automatically).
-  const hasCourse = await db.get("SELECT id FROM courses LIMIT 1");
-  if (!hasCourse && process.env.ACADEMY_SKIP_AUTO_IMPORT !== "1") {
-    const [{ seedCourse }, { financeStatisticsCourse }] = await Promise.all([
+  // Import the built-in course on first run, and again whenever its content
+  // version changes. The import never deletes rows and never publishes:
+  // new and changed items land in review.
+  if (process.env.ACADEMY_SKIP_AUTO_IMPORT !== "1") {
+    const [{ seedCourse }, { financeStatisticsCourse, CONTENT_VERSION }] = await Promise.all([
       import("../content/seed"),
       import("../content/course"),
     ]);
-    await seedCourse(db, financeStatisticsCourse);
+    const stored = await db.get<{ value: string }>("SELECT value FROM app_meta WHERE key = 'content_version'");
+    if (stored?.value !== CONTENT_VERSION) {
+      await seedCourse(db, financeStatisticsCourse);
+      await db.run(
+        "INSERT INTO app_meta (key, value) VALUES ('content_version', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        [CONTENT_VERSION],
+      );
+    }
   }
   return db;
 }
